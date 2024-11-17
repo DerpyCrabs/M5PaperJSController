@@ -119,8 +119,10 @@ void drawButton(size_t &offset) {
   offset += 2;
   uint32_t h = (widgetData[offset] << 8) | widgetData[offset + 1];
   offset += 2;
-  Serial.printf("    x: %d, y: %d, w: %d, h: %d\n", x, y, w, h);
-  canvas.drawRect(x, y, w, h, 15);
+  uint32_t color = widgetData[offset];
+  offset += 1;
+  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
+  canvas.drawRect(x, y, w, h, color);
 }
 
 void drawLabel(size_t &offset) {
@@ -133,12 +135,15 @@ void drawLabel(size_t &offset) {
   offset += 1;
   uint32_t fontSize = widgetData[offset];
   offset += 1;
+  uint32_t color = widgetData[offset];
+  offset += 1;
   uint32_t textLength = widgetData[offset];
   offset += 1;
   char *text = (char *)&widgetData[offset];
   offset += textLength;
   Serial.printf("    x: %d, y: %d\n", x, y);
-  Serial.printf("    font: %d, datum: %d, length: %d, text: %s\n", fontSize, textDatum, textLength, text);
+  Serial.printf("    font: %d, datum: %d, color: %d, length: %d, text: %s\n", fontSize, textDatum, color, textLength, text);
+  canvas.setTextColor(color);
   canvas.setTextSize(fontSize);
   canvas.setTextDatum(textDatum);
   canvas.drawString(text, x, y);
@@ -154,13 +159,15 @@ void drawLine(size_t &offset) {
   offset += 2;
   uint32_t y2 = (widgetData[offset] << 8) | widgetData[offset + 1];
   offset += 2;
-  Serial.printf("    %d,%d -> %d,%d\n", x1, y1, x2, y2);
+  uint32_t color = widgetData[offset];
+  offset += 1;
+  Serial.printf("    %d,%d -> %d,%d, color: %d\n", x1, y1, x2, y2, color);
   if (x1 == x2) {
-    canvas.drawFastVLine(x1, y1, y2 - y1, 15);
+    canvas.drawFastVLine(x1, y1, y2 - y1, color);
   } else if (y1 == y2) {
-    canvas.drawFastHLine(x1, y1, x2 - x1, 15);
+    canvas.drawFastHLine(x1, y1, x2 - x1, color);
   } else {
-    canvas.drawLine(x1, y1, x2, y2, 15);
+    canvas.drawLine(x1, y1, x2, y2, color);
   }
 }
 

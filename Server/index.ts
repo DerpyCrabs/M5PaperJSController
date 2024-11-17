@@ -1,30 +1,64 @@
 import { TextDatum, WidgetType, getWidgetsPayload, type Widget } from './widgets'
 
+type Task = {
+  name: string
+  completed?: boolean
+}
+
 class TodoApp {
-  count: number = 0
+  tasks: Task[] = [
+    {
+      name: 'buy bread',
+    },
+    {
+      name: 'add colors',
+    },
+    {
+      name: 'complete todo app',
+    },
+  ]
 
   constructor() {}
 
-  getWidgets(): Widget[] {
+  renderTask(task: Task, index: number): Widget[] {
     return [
-      { widgetType: WidgetType.Button, id: 'myButton', x: 100, y: 200, w: 300, h: 150 },
+      {
+        widgetType: WidgetType.Button,
+        x: 0,
+        y: 75 + index * 60,
+        w: 540,
+        h: 60,
+        color: 0,
+        id: `task:${index}`,
+      },
       {
         widgetType: WidgetType.Label,
-        id: 'myLabel',
-        x: 250,
-        y: 275,
-        datum: TextDatum.MiddleCenter,
+        x: 40,
+        y: 105 + index * 60,
+        text: task.name,
+        datum: TextDatum.MiddleLeft,
         fontSize: 3,
-        text: `Count ${this.count}`,
+        color: 15,
       },
-      { widgetType: WidgetType.Line, x1: 0, y1: 500, x2: 540, y2: 500 },
     ]
   }
-  reactToTouch(pressedAreaId?: string) {
-    if (pressedAreaId === 'myButton') {
-      this.count += 1
-    }
+
+  getWidgets(): Widget[] {
+    return [
+      {
+        widgetType: WidgetType.Label,
+        x: 540 / 2,
+        y: 40,
+        text: 'Todo App MVP',
+        datum: TextDatum.MiddleCenter,
+        fontSize: 4,
+        color: 15,
+      },
+      ...this.tasks.flatMap(this.renderTask),
+      { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
+    ]
   }
+  reactToTouch(pressedAreaId?: string) {}
 }
 
 const app = new TodoApp()
