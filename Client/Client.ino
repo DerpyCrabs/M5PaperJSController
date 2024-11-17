@@ -104,6 +104,8 @@ void drawWidget(uint8_t widgetType, size_t &offset) {
     drawLabel(offset);
   } else if (widgetType == 3) {
     drawLine(offset);
+  } else if (widgetType == 4) {
+    drawImage(offset);
   } else {
     Serial.printf("  Widget type: Unknown\n");
   }
@@ -168,6 +170,29 @@ void drawLine(size_t &offset) {
     canvas.drawFastHLine(x1, y1, x2 - x1, color);
   } else {
     canvas.drawLine(x1, y1, x2, y2, color);
+  }
+}
+
+void drawImage(size_t &offset) {
+  Serial.printf("  Widget type: Image\n");
+  uint32_t x = (widgetData[offset] << 8) | widgetData[offset + 1];
+  offset += 2;
+  uint32_t y = (widgetData[offset] << 8) | widgetData[offset + 1];
+  offset += 2;
+  uint32_t w = (widgetData[offset] << 8) | widgetData[offset + 1];
+  offset += 2;
+  uint32_t h = (widgetData[offset] << 8) | widgetData[offset + 1];
+  offset += 2;
+  uint32_t color = widgetData[offset];
+  offset += 1;
+  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
+  
+  for (uint32_t i = 0; i < h; i++) {
+    for (uint32_t j = 0; j < w; j++) {
+      uint32_t color = widgetData[offset];
+      offset += 1;
+      canvas.drawPixel(x+j, y+i, color == 1 ? 15 : 0);
+    }
   }
 }
 

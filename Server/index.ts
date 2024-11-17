@@ -1,4 +1,25 @@
-import { TextDatum, WidgetType, getWidgetsPayload, type Widget } from './widgets'
+import { TextDatum, WidgetType, getWidgetsPayload, type ImageWidget, type LineWidget, type Widget } from './widgets'
+import bmp from 'bmp-js'
+import fs from 'node:fs'
+import path from 'node:path'
+
+const checkedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'checked.bmp')))
+const uncheckedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'unchecked.bmp')))
+
+function bmpToPixelData(bmp: bmp.BmpDecoder): ImageWidget['pixelData'] {
+  const w = bmp.width
+  const h = bmp.height
+  const data: ImageWidget['pixelData'] = { rows: [...Array(h)].map(() => ({ pixels: [...Array(w).fill(0)] })) }
+
+  data.rows.forEach((row, i) => {
+    row.pixels.forEach((pixel, j) => {
+      const r = bmp.data[i * 4 * h + j * 4 + 1]
+      data.rows[i].pixels[j] = r !== 0 ? 0 : 1
+    })
+  })
+
+  return data
+}
 
 type Task = {
   name: string
@@ -30,8 +51,31 @@ class TodoApp {
         h: 60,
         borderColor: 0,
         label: task.name,
+        labelMarginLeft: 60,
+        labelDatum: TextDatum.MiddleLeft,
         id: `task:${index}`,
       },
+      {
+        widgetType: WidgetType.Image,
+        x: 14,
+        y: 88 + index * 60,
+        w: 32,
+        h: 32,
+        color: 15,
+        pixelData: bmpToPixelData(task.completed ? checkedIcon : uncheckedIcon),
+      },
+      ...(task.completed
+        ? [
+            {
+              widgetType: WidgetType.Line,
+              x1: 55,
+              x2: 55 + task.name.length * 18 + 8,
+              y1: 105 + index * 60,
+              y2: 105 + index * 60,
+              color: 15,
+            } as LineWidget,
+          ]
+        : []),
     ]
   }
 
@@ -50,7 +94,12 @@ class TodoApp {
       { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
     ]
   }
-  reactToTouch(pressedAreaId?: string) {}
+  reactToTouch(pressedAreaId?: string) {
+    if (pressedAreaId && /task:.*/g.test(pressedAreaId)) {
+      const taskIndex = Number(pressedAreaId.split(':')[1])
+      this.tasks[taskIndex].completed = !(this.tasks[taskIndex].completed || false)
+    }
+  }
 }
 
 const app = new TodoApp()

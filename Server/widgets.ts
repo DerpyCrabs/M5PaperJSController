@@ -2,6 +2,7 @@ export enum PrimitiveWidgetType {
   Rect = 1,
   Label = 2,
   Line = 3,
+  Image = 4,
 }
 
 export enum WidgetType {
@@ -9,6 +10,7 @@ export enum WidgetType {
   Label = 'Label',
   Line = 'Line',
   Button = 'Button',
+  Image = 'Image',
 }
 
 export enum TextDatum {
@@ -85,6 +87,23 @@ export type LineWidget = {
   id?: string
 }
 
+// Image structure
+// x: uint16
+// y: uint16
+// w: uint16
+// h: uint16
+// color: uint8
+// pixelData: w * h bits
+export type ImageWidget = {
+  widgetType: WidgetType.Image
+  x: number
+  y: number
+  w: number
+  h: number
+  color: Color
+  pixelData: { rows: { pixels: (0 | 1)[] }[] }
+}
+
 export type ButtonWidget = {
   widgetType: WidgetType.Button
   x: number
@@ -96,10 +115,11 @@ export type ButtonWidget = {
   labelColor?: Color
   labelDatum?: TextDatum
   labelSize?: number
+  labelMarginLeft?: number
   id?: string
 }
 
-export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget
+export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget
 export type CompositeWidget = ButtonWidget
 export type Widget = CompositeWidget | PrimitiveWidget
 
@@ -140,6 +160,23 @@ function packLine(view: DataView, offset: number, line: LineWidget): number {
   return getWidgetPayloadSize(line)
 }
 
+function packImage(view: DataView, offset: number, image: ImageWidget): number {
+  view.setUint8(offset, PrimitiveWidgetType.Image)
+  view.setUint16(offset + 1, image.x)
+  view.setUint16(offset + 3, image.y)
+  view.setUint16(offset + 5, image.w)
+  view.setUint16(offset + 7, image.h)
+  view.setUint8(offset + 9, image.color)
+  let currentOffset = offset + 10
+  image.pixelData.rows.forEach((row) => {
+    row.pixels.forEach((pixel) => {
+      view.setUint8(currentOffset, pixel)
+      currentOffset += 1
+    })
+  })
+  return getWidgetPayloadSize(image)
+}
+
 function getWidgetPayloadSize(widget: PrimitiveWidget): number {
   if (widget.widgetType === WidgetType.Rect) {
     return 10
@@ -147,6 +184,8 @@ function getWidgetPayloadSize(widget: PrimitiveWidget): number {
     return 9 + widget.text.length + 1
   } else if (widget.widgetType === WidgetType.Line) {
     return 10
+  } else if (widget.widgetType === WidgetType.Image) {
+    return 10 + widget.w * widget.h
   } else {
     throw new Error(`Unsupported widget type ${(widget as any).widgetType}`)
   }
@@ -167,7 +206,7 @@ function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
         ? {
             widgetType: WidgetType.Label,
             datum: w.labelDatum || TextDatum.MiddleCenter,
-            x: w.x + w.w / 2,
+            x: w.x + (w.labelMarginLeft !== undefined ? w.labelMarginLeft : w.w / 2),
             y: w.y + w.h / 2,
             text: w.label,
             color: w.labelColor !== undefined ? w.labelColor : 15,
@@ -195,6 +234,8 @@ export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
       offset += packLabel(payloadView, offset, w)
     } else if (w.widgetType === WidgetType.Line) {
       offset += packLine(payloadView, offset, w)
+    } else if (w.widgetType === WidgetType.Image) {
+      offset += packImage(payloadView, offset, w)
     }
   })
   return payload
