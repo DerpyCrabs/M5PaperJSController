@@ -123,72 +123,61 @@ export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidge
 export type CompositeWidget = ButtonWidget
 export type Widget = CompositeWidget | PrimitiveWidget
 
-function packRect(view: DataView, offset: number, rect: RectWidget): number {
-  view.setUint8(offset, PrimitiveWidgetType.Rect)
-  view.setUint16(offset + 1, rect.x)
-  view.setUint16(offset + 3, rect.y)
-  view.setUint16(offset + 5, rect.w)
-  view.setUint16(offset + 7, rect.h)
-  view.setUint8(offset + 9, rect.color)
-  return getWidgetPayloadSize(rect)
+type DataDescription = { data: number; dataType: 'uint8' | 'uint16' | 'uint32' }
+
+function packRect(rect: RectWidget): DataDescription[] {
+  return [
+    { data: PrimitiveWidgetType.Rect, dataType: 'uint8' },
+    { data: rect.x, dataType: 'uint16' },
+    { data: rect.y, dataType: 'uint16' },
+    { data: rect.w, dataType: 'uint16' },
+    { data: rect.h, dataType: 'uint16' },
+    { data: rect.color, dataType: 'uint8' },
+  ]
 }
 
-function packLabel(view: DataView, offset: number, label: LabelWidget): number {
-  view.setUint8(offset, PrimitiveWidgetType.Label)
-  view.setUint16(offset + 1, label.x)
-  view.setUint16(offset + 3, label.y)
-  view.setUint8(offset + 5, label.datum)
-  view.setUint8(offset + 6, label.fontSize)
-  view.setUint8(offset + 7, label.color)
-  view.setUint8(offset + 8, label.text.length + 1)
-  let currentOffset = offset + 9
-  label.text.split('').forEach((char) => {
-    view.setUint8(currentOffset, char.charCodeAt(0))
-    currentOffset += 1
-  })
-  view.setUint8(currentOffset, 0)
-  return getWidgetPayloadSize(label)
+function packLabel(label: LabelWidget): DataDescription[] {
+  const textLength = label.text.length + 1
+  const textData: DataDescription[] = label.text
+    .split('')
+    .map((char) => ({ data: char.charCodeAt(0), dataType: 'uint8' }))
+  textData.push({ data: 0, dataType: 'uint8' }) // Null terminator
+  return [
+    { data: PrimitiveWidgetType.Label, dataType: 'uint8' },
+    { data: label.x, dataType: 'uint16' },
+    { data: label.y, dataType: 'uint16' },
+    { data: label.datum, dataType: 'uint8' },
+    { data: label.fontSize, dataType: 'uint8' },
+    { data: label.color, dataType: 'uint8' },
+    { data: textLength, dataType: 'uint8' },
+    ...textData,
+  ]
 }
 
-function packLine(view: DataView, offset: number, line: LineWidget): number {
-  view.setUint8(offset, PrimitiveWidgetType.Line)
-  view.setUint16(offset + 1, line.x1)
-  view.setUint16(offset + 3, line.y1)
-  view.setUint16(offset + 5, line.x2)
-  view.setUint16(offset + 7, line.y2)
-  view.setUint8(offset + 9, line.color)
-  return getWidgetPayloadSize(line)
+function packLine(line: LineWidget): DataDescription[] {
+  return [
+    { data: PrimitiveWidgetType.Line, dataType: 'uint8' },
+    { data: line.x1, dataType: 'uint16' },
+    { data: line.y1, dataType: 'uint16' },
+    { data: line.x2, dataType: 'uint16' },
+    { data: line.y2, dataType: 'uint16' },
+    { data: line.color, dataType: 'uint8' },
+  ]
 }
 
-function packImage(view: DataView, offset: number, image: ImageWidget): number {
-  view.setUint8(offset, PrimitiveWidgetType.Image)
-  view.setUint16(offset + 1, image.x)
-  view.setUint16(offset + 3, image.y)
-  view.setUint16(offset + 5, image.w)
-  view.setUint16(offset + 7, image.h)
-  view.setUint8(offset + 9, image.color)
-  let currentOffset = offset + 10
-  image.pixelData.rows.forEach((row) => {
-    row.pixels.forEach((pixel) => {
-      view.setUint8(currentOffset, pixel)
-      currentOffset += 1
-    })
-  })
-  return getWidgetPayloadSize(image)
-}
-
-function getWidgetPayloadSize(widget: PrimitiveWidget): number {
-  if (widget.widgetType === WidgetType.Rect) {
-    return 10
-  } else if (widget.widgetType === WidgetType.Label) {
-    return 9 + widget.text.length + 1
-  } else if (widget.widgetType === WidgetType.Line) {
-    return 10
-  } else if (widget.widgetType === WidgetType.Image) {
-    return 10 + widget.w * widget.h
-  } else {
-    throw new Error(`Unsupported widget type ${(widget as any).widgetType}`)
-  }
+function packImage(image: ImageWidget): DataDescription[] {
+  const pixelData: DataDescription[] = image.pixelData.rows.flatMap((row) =>
+    row.pixels.map((pixel) => ({ data: pixel, dataType: 'uint8' }))
+  )
+  return [
+    { data: PrimitiveWidgetType.Image, dataType: 'uint8' },
+    { data: image.x, dataType: 'uint16' },
+    { data: image.y, dataType: 'uint16' },
+    { data: image.w, dataType: 'uint16' },
+    { data: image.h, dataType: 'uint16' },
+    { data: image.color, dataType: 'uint8' },
+    ...pixelData,
+  ]
 }
 
 function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
@@ -220,23 +209,49 @@ function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
   })
 }
 
+function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
+  return dataDescriptions.reduce((size, { dataType }) => {
+    if (dataType === 'uint8') return size + 1
+    if (dataType === 'uint16') return size + 2
+    if (dataType === 'uint32') return size + 4
+    return size
+  }, 0)
+}
+
 export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
   const primitiveWidgets = unwrapCompositeWidgets(widgets)
-  const payload = new ArrayBuffer(2 + primitiveWidgets.map(getWidgetPayloadSize).reduce((a, v) => a + v))
+  const dataDescriptions: DataDescription[] = primitiveWidgets.flatMap((w) => {
+    if (w.widgetType === WidgetType.Rect) {
+      return packRect(w)
+    } else if (w.widgetType === WidgetType.Label) {
+      return packLabel(w)
+    } else if (w.widgetType === WidgetType.Line) {
+      return packLine(w)
+    } else if (w.widgetType === WidgetType.Image) {
+      return packImage(w)
+    }
+    return []
+  })
+
+  const payloadSize = 2 + calculatePayloadSize(dataDescriptions)
+  const payload = new ArrayBuffer(payloadSize)
   const payloadView = new DataView(payload)
   let offset = 0
   payloadView.setUint16(0, primitiveWidgets.length)
   offset += 2
-  primitiveWidgets.forEach((w) => {
-    if (w.widgetType === WidgetType.Rect) {
-      offset += packRect(payloadView, offset, w)
-    } else if (w.widgetType === WidgetType.Label) {
-      offset += packLabel(payloadView, offset, w)
-    } else if (w.widgetType === WidgetType.Line) {
-      offset += packLine(payloadView, offset, w)
-    } else if (w.widgetType === WidgetType.Image) {
-      offset += packImage(payloadView, offset, w)
+
+  dataDescriptions.forEach(({ data, dataType }) => {
+    if (dataType === 'uint8') {
+      payloadView.setUint8(offset, data)
+      offset += 1
+    } else if (dataType === 'uint16') {
+      payloadView.setUint16(offset, data)
+      offset += 2
+    } else if (dataType === 'uint32') {
+      payloadView.setUint32(offset, data)
+      offset += 4
     }
   })
+
   return payload
 }
