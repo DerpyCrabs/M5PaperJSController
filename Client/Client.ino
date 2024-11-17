@@ -99,7 +99,7 @@ void displayWidgets() {
 
 void drawWidget(uint8_t widgetType, size_t &offset) {
   if (widgetType == 1) {
-    drawButton(offset);
+    drawRect(offset);
   } else if (widgetType == 2) {
     drawLabel(offset);
   } else if (widgetType == 3) {
@@ -109,8 +109,8 @@ void drawWidget(uint8_t widgetType, size_t &offset) {
   }
 }
 
-void drawButton(size_t &offset) {
-  Serial.printf("  Widget type: Button\n");
+void drawRect(size_t &offset) {
+  Serial.printf("  Widget type: Rect\n");
   uint32_t x = (widgetData[offset] << 8) | widgetData[offset + 1];
   offset += 2;
   uint32_t y = (widgetData[offset] << 8) | widgetData[offset + 1];

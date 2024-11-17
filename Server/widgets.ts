@@ -1,7 +1,14 @@
-export enum WidgetType {
-  Button = 1,
+export enum PrimitiveWidgetType {
+  Rect = 1,
   Label = 2,
   Line = 3,
+}
+
+export enum WidgetType {
+  Rect = 'Rect',
+  Label = 'Label',
+  Line = 'Line',
+  Button = 'Button',
 }
 
 export enum TextDatum {
@@ -27,14 +34,14 @@ export type Color = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 
 //   widgetType: uint8
 //   ...widgetData: depends on type
 
-// Button structure
+// Rect structure
 // x: uint16
 // y: uint16
 // w: uint16
 // h: uint16
 // color: uint8
-export type ButtonWidget = {
-  widgetType: WidgetType.Button
+export type RectWidget = {
+  widgetType: WidgetType.Rect
   x: number
   y: number
   w: number
@@ -78,20 +85,36 @@ export type LineWidget = {
   id?: string
 }
 
-export type Widget = ButtonWidget | LabelWidget | LineWidget
+export type ButtonWidget = {
+  widgetType: WidgetType.Button
+  x: number
+  y: number
+  w: number
+  h: number
+  label?: string
+  borderColor?: Color
+  labelColor?: Color
+  labelDatum?: TextDatum
+  labelSize?: number
+  id?: string
+}
 
-function packButton(view: DataView, offset: number, button: ButtonWidget): number {
-  view.setUint8(offset, WidgetType.Button)
-  view.setUint16(offset + 1, button.x)
-  view.setUint16(offset + 3, button.y)
-  view.setUint16(offset + 5, button.w)
-  view.setUint16(offset + 7, button.h)
-  view.setUint8(offset + 9, button.color)
-  return getWidgetPayloadSize(button)
+export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget
+export type CompositeWidget = ButtonWidget
+export type Widget = CompositeWidget | PrimitiveWidget
+
+function packRect(view: DataView, offset: number, rect: RectWidget): number {
+  view.setUint8(offset, PrimitiveWidgetType.Rect)
+  view.setUint16(offset + 1, rect.x)
+  view.setUint16(offset + 3, rect.y)
+  view.setUint16(offset + 5, rect.w)
+  view.setUint16(offset + 7, rect.h)
+  view.setUint8(offset + 9, rect.color)
+  return getWidgetPayloadSize(rect)
 }
 
 function packLabel(view: DataView, offset: number, label: LabelWidget): number {
-  view.setUint8(offset, WidgetType.Label)
+  view.setUint8(offset, PrimitiveWidgetType.Label)
   view.setUint16(offset + 1, label.x)
   view.setUint16(offset + 3, label.y)
   view.setUint8(offset + 5, label.datum)
@@ -108,7 +131,7 @@ function packLabel(view: DataView, offset: number, label: LabelWidget): number {
 }
 
 function packLine(view: DataView, offset: number, line: LineWidget): number {
-  view.setUint8(offset, WidgetType.Line)
+  view.setUint8(offset, PrimitiveWidgetType.Line)
   view.setUint16(offset + 1, line.x1)
   view.setUint16(offset + 3, line.y1)
   view.setUint16(offset + 5, line.x2)
@@ -117,8 +140,8 @@ function packLine(view: DataView, offset: number, line: LineWidget): number {
   return getWidgetPayloadSize(line)
 }
 
-function getWidgetPayloadSize(widget: Widget): number {
-  if (widget.widgetType === WidgetType.Button) {
+function getWidgetPayloadSize(widget: PrimitiveWidget): number {
+  if (widget.widgetType === WidgetType.Rect) {
     return 10
   } else if (widget.widgetType === WidgetType.Label) {
     return 9 + widget.text.length + 1
@@ -129,14 +152,45 @@ function getWidgetPayloadSize(widget: Widget): number {
   }
 }
 
-export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
-  const payload = new ArrayBuffer(2 + widgets.map(getWidgetPayloadSize).reduce((a, v) => a + v))
-  const payloadView = new DataView(payload)
-  payloadView.setUint16(0, widgets.length)
-  let offset = 2
-  widgets.forEach((w) => {
+function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
+  return widgets.flatMap((w) => {
     if (w.widgetType === WidgetType.Button) {
-      offset += packButton(payloadView, offset, w)
+      const border: RectWidget = {
+        color: w.borderColor !== undefined ? w.borderColor : 15,
+        x: w.x,
+        y: w.y,
+        w: w.w,
+        h: w.h,
+        widgetType: WidgetType.Rect,
+      }
+      const label: LabelWidget | undefined = w.label
+        ? {
+            widgetType: WidgetType.Label,
+            datum: w.labelDatum || TextDatum.MiddleCenter,
+            x: w.x + w.w / 2,
+            y: w.y + w.h / 2,
+            text: w.label,
+            color: w.labelColor !== undefined ? w.labelColor : 15,
+            fontSize: w.labelSize || 3,
+          }
+        : undefined
+      return label ? [border, label] : [border]
+    } else {
+      return [w]
+    }
+  })
+}
+
+export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
+  const primitiveWidgets = unwrapCompositeWidgets(widgets)
+  const payload = new ArrayBuffer(2 + primitiveWidgets.map(getWidgetPayloadSize).reduce((a, v) => a + v))
+  const payloadView = new DataView(payload)
+  let offset = 0
+  payloadView.setUint16(0, primitiveWidgets.length)
+  offset += 2
+  primitiveWidgets.forEach((w) => {
+    if (w.widgetType === WidgetType.Rect) {
+      offset += packRect(payloadView, offset, w)
     } else if (w.widgetType === WidgetType.Label) {
       offset += packLabel(payloadView, offset, w)
     } else if (w.widgetType === WidgetType.Line) {

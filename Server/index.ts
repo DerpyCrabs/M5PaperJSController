@@ -28,17 +28,9 @@ class TodoApp {
         y: 75 + index * 60,
         w: 540,
         h: 60,
-        color: 0,
+        borderColor: 0,
+        label: task.name,
         id: `task:${index}`,
-      },
-      {
-        widgetType: WidgetType.Label,
-        x: 40,
-        y: 105 + index * 60,
-        text: task.name,
-        datum: TextDatum.MiddleLeft,
-        fontSize: 3,
-        color: 15,
       },
     ]
   }
