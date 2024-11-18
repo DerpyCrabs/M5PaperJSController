@@ -4,6 +4,8 @@ export enum PrimitiveWidgetType {
   Line = 3,
   Image = 4,
   BatteryStatus = 5,
+  Temperature = 6,
+  Humidity = 7,
 }
 
 export enum WidgetType {
@@ -13,6 +15,8 @@ export enum WidgetType {
   Button = 'Button',
   Image = 'Image',
   BatteryStatus = 'BatteryStatus',
+  Temperature = 'Temperature',
+  Humidity = 'Humidity',
 }
 
 export enum TextDatum {
@@ -123,6 +127,32 @@ export type BatteryStatusWidget = {
   color: Color
 }
 
+// Temperature structure
+// x: uint16
+// y: uint16
+// fontSize: uint8
+// color: uint8
+export type TemperatureWidget = {
+  widgetType: WidgetType.Temperature
+  x: number
+  y: number
+  fontSize: number
+  color: Color
+}
+
+// Humidity structure
+// x: uint16
+// y: uint16
+// fontSize: uint8
+// color: uint8
+export type HumidityWidget = {
+  widgetType: WidgetType.Humidity
+  x: number
+  y: number
+  fontSize: number
+  color: Color
+}
+
 export type ButtonWidget = {
   widgetType: WidgetType.Button
   x: number
@@ -138,7 +168,7 @@ export type ButtonWidget = {
   id?: string
 }
 
-export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget | BatteryStatusWidget
+export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget | BatteryStatusWidget | TemperatureWidget | HumidityWidget
 export type CompositeWidget = ButtonWidget
 export type Widget = CompositeWidget | PrimitiveWidget
 
@@ -211,6 +241,26 @@ function packBatteryStatus(batteryStatus: BatteryStatusWidget): DataDescription[
   ]
 }
 
+function packTemperature(temperature: TemperatureWidget): DataDescription[] {
+  return [
+    { data: PrimitiveWidgetType.Temperature, dataType: 'uint8' },
+    { data: temperature.x, dataType: 'uint16' },
+    { data: temperature.y, dataType: 'uint16' },
+    { data: temperature.fontSize, dataType: 'uint8' },
+    { data: temperature.color, dataType: 'uint8' },
+  ]
+}
+
+function packHumidity(humidity: HumidityWidget): DataDescription[] {
+  return [
+    { data: PrimitiveWidgetType.Humidity, dataType: 'uint8' },
+    { data: humidity.x, dataType: 'uint16' },
+    { data: humidity.y, dataType: 'uint16' },
+    { data: humidity.fontSize, dataType: 'uint8' },
+    { data: humidity.color, dataType: 'uint8' },
+  ]
+}
+
 function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
   return widgets.flatMap((w) => {
     if (w.widgetType === WidgetType.Button) {
@@ -262,6 +312,10 @@ export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
       return packImage(w)
     } else if (w.widgetType === WidgetType.BatteryStatus) {
       return packBatteryStatus(w)
+    } else if (w.widgetType === WidgetType.Temperature) {
+      return packTemperature(w)
+    } else if (w.widgetType === WidgetType.Humidity) {
+      return packHumidity(w)
     }
     return []
   })

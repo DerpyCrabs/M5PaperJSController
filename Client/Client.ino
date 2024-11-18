@@ -23,6 +23,7 @@ void loop() {
 
 void initializeM5EPD() {
   M5.begin();
+  M5.SHT30.Begin();
   M5.EPD.SetRotation(90);
   M5.TP.SetRotation(90);
   M5.EPD.Clear(true);
@@ -107,6 +108,10 @@ void drawWidget(uint8_t widgetType, size_t &offset) {
     drawImage(offset);
   } else if (widgetType == 5) {
     drawBatteryStatus(offset);
+  } else if (widgetType == 6) {
+    drawTemperature(offset);
+  } else if (widgetType == 7) {
+    drawHumidity(offset);
   } else {
     Serial.printf("  Widget type: Unknown\n");
   }
@@ -213,6 +218,44 @@ void drawBatteryStatus(size_t &offset) {
   canvas.setTextSize(fontSize);
   canvas.setTextDatum(MC_DATUM);
   canvas.drawString(String(displayedLevel) + "%", x, y);
+}
+
+void drawTemperature(size_t &offset) {
+  Serial.printf("  Widget type: Temperature\n");
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t fontSize = readUint8(offset);
+  uint32_t color = readUint8(offset);
+  Serial.printf("    x: %d, y: %d, fontSize: %d, color: %d\n", x, y, fontSize, color);
+
+  M5.SHT30.UpdateData();
+  float temperature = M5.SHT30.GetTemperature();
+  char temperatureString[10];
+  sprintf(temperatureString, "%+.1fC", temperature);
+
+  canvas.setTextColor(color);
+  canvas.setTextSize(fontSize);
+  canvas.setTextDatum(MC_DATUM);
+  canvas.drawString(temperatureString, x, y);
+}
+
+void drawHumidity(size_t &offset) {
+  Serial.printf("  Widget type: Humidity\n");
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t fontSize = readUint8(offset);
+  uint32_t color = readUint8(offset);
+  Serial.printf("    x: %d, y: %d, fontSize: %d, color: %d\n", x, y, fontSize, color);
+
+  M5.SHT30.UpdateData();
+  float humidity = M5.SHT30.GetRelHumidity();
+  char humidityString[10];
+  sprintf(humidityString, "%0.0f%%", humidity);
+
+  canvas.setTextColor(color);
+  canvas.setTextSize(fontSize);
+  canvas.setTextDatum(MC_DATUM);
+  canvas.drawString(humidityString, x, y);
 }
 
 int readBatteryStatus() {

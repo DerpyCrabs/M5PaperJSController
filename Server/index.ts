@@ -84,7 +84,7 @@ class TodoApp {
       {
         widgetType: WidgetType.Rect,
         x: 118,
-        y: 18,
+        y: 28,
         w: 300,
         h: 40,
         roundRadius: 6,
@@ -94,7 +94,7 @@ class TodoApp {
       {
         widgetType: WidgetType.Label,
         x: 540 / 2,
-        y: 40,
+        y: 50,
         text: 'Todo App MVP',
         datum: TextDatum.MiddleCenter,
         fontSize: 4,
@@ -105,6 +105,20 @@ class TodoApp {
       {
         widgetType: WidgetType.BatteryStatus,
         x: 540 - 30,
+        y: 20,
+        fontSize: 2,
+        color: 15,
+      },
+      {
+        widgetType: WidgetType.Temperature,
+        x: 540 - 105,
+        y: 20,
+        fontSize: 2,
+        color: 15,
+      },
+      {
+        widgetType: WidgetType.Humidity,
+        x: 540 - 170,
         y: 20,
         fontSize: 2,
         color: 15,
