@@ -85,13 +85,12 @@ bool fetchWidgetData() {
 }
 
 void displayWidgets() {
-  uint16_t widgetCount = (widgetData[0] << 8) | widgetData[1];
+  size_t offset = 0;
+  uint16_t widgetCount = readUint16(offset);
   Serial.printf("Widget count: %d\n", (size_t)widgetCount);
-  size_t offset = 2;
   canvas.fillCanvas(0);
   for (int i = 0; i < widgetCount; i++) {
-    uint8_t widgetType = widgetData[offset];
-    offset += 1;
+    uint8_t widgetType = readUint8(offset);
     drawWidget(widgetType, offset);
   }
   canvas.pushCanvas(0, 0, UPDATE_MODE_DU4);
@@ -113,20 +112,13 @@ void drawWidget(uint8_t widgetType, size_t &offset) {
 
 void drawRect(size_t &offset) {
   Serial.printf("  Widget type: Rect\n");
-  uint32_t x = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t y = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t w = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t h = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t color = widgetData[offset];
-  offset += 1;
-  uint32_t roundRadius = widgetData[offset];
-  offset += 1;
-  bool fill = widgetData[offset];
-  offset += 1;
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t w = readUint16(offset);
+  uint32_t h = readUint16(offset);
+  uint32_t color = readUint8(offset);
+  uint32_t roundRadius = readUint8(offset);
+  bool fill = readUint8(offset);
   Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d, roundRadius: %d, fill: %d\n", x, y, w, h, color, roundRadius, fill);
   if (fill) {
     if (roundRadius > 0) {
@@ -145,18 +137,12 @@ void drawRect(size_t &offset) {
 
 void drawLabel(size_t &offset) {
   Serial.printf("  Widget type: Label\n");
-  uint32_t x = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t y = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t textDatum = widgetData[offset];
-  offset += 1;
-  uint32_t fontSize = widgetData[offset];
-  offset += 1;
-  uint32_t color = widgetData[offset];
-  offset += 1;
-  uint32_t textLength = widgetData[offset];
-  offset += 1;
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t textDatum = readUint8(offset);
+  uint32_t fontSize = readUint8(offset);
+  uint32_t color = readUint8(offset);
+  uint32_t textLength = readUint8(offset);
   char *text = (char *)&widgetData[offset];
   offset += textLength;
   Serial.printf("    x: %d, y: %d\n", x, y);
@@ -169,16 +155,11 @@ void drawLabel(size_t &offset) {
 
 void drawLine(size_t &offset) {
   Serial.printf("  Widget type: Line\n");
-  uint32_t x1 = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t y1 = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t x2 = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t y2 = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t color = widgetData[offset];
-  offset += 1;
+  uint32_t x1 = readUint16(offset);
+  uint32_t y1 = readUint16(offset);
+  uint32_t x2 = readUint16(offset);
+  uint32_t y2 = readUint16(offset);
+  uint32_t color = readUint8(offset);
   Serial.printf("    %d,%d -> %d,%d, color: %d\n", x1, y1, x2, y2, color);
   if (x1 == x2) {
     canvas.drawFastVLine(x1, y1, y2 - y1, color);
@@ -191,22 +172,16 @@ void drawLine(size_t &offset) {
 
 void drawImage(size_t &offset) {
   Serial.printf("  Widget type: Image\n");
-  uint32_t x = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t y = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t w = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t h = (widgetData[offset] << 8) | widgetData[offset + 1];
-  offset += 2;
-  uint32_t color = widgetData[offset];
-  offset += 1;
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t w = readUint16(offset);
+  uint32_t h = readUint16(offset);
+  uint32_t color = readUint8(offset);
   Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
 
   for (uint32_t i = 0; i < h; i++) {
     for (uint32_t j = 0; j < w; j++) {
-      uint32_t color = widgetData[offset];
-      offset += 1;
+      uint32_t color = readUint8(offset);
       canvas.drawPixel(x+j, y+i, color == 1 ? 15 : 0);
     }
   }
@@ -278,4 +253,16 @@ void sendTouchData(int x, int y) {
     free(widgetData);
   }
   widgetData = newWidgetData;
+}
+
+uint16_t readUint16(size_t &offset) {
+  uint16_t value = (widgetData[offset] << 8) | widgetData[offset + 1];
+  offset += 2;
+  return value;
+}
+
+uint8_t readUint8(size_t &offset) {
+  uint8_t value = widgetData[offset];
+  offset += 1;
+  return value;
 }
