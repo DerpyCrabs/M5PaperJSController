@@ -3,6 +3,7 @@ export enum PrimitiveWidgetType {
   Label = 2,
   Line = 3,
   Image = 4,
+  BatteryStatus = 5,
 }
 
 export enum WidgetType {
@@ -11,6 +12,7 @@ export enum WidgetType {
   Line = 'Line',
   Button = 'Button',
   Image = 'Image',
+  BatteryStatus = 'BatteryStatus',
 }
 
 export enum TextDatum {
@@ -108,6 +110,19 @@ export type ImageWidget = {
   pixelData: { rows: { pixels: (0 | 1)[] }[] }
 }
 
+// BatteryStatus structure
+// x: uint16
+// y: uint16
+// fontSize: uint8
+// color: uint8
+export type BatteryStatusWidget = {
+  widgetType: WidgetType.BatteryStatus
+  x: number
+  y: number
+  fontSize: number
+  color: Color
+}
+
 export type ButtonWidget = {
   widgetType: WidgetType.Button
   x: number
@@ -123,7 +138,7 @@ export type ButtonWidget = {
   id?: string
 }
 
-export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget
+export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget | BatteryStatusWidget
 export type CompositeWidget = ButtonWidget
 export type Widget = CompositeWidget | PrimitiveWidget
 
@@ -186,6 +201,16 @@ function packImage(image: ImageWidget): DataDescription[] {
   ]
 }
 
+function packBatteryStatus(batteryStatus: BatteryStatusWidget): DataDescription[] {
+  return [
+    { data: PrimitiveWidgetType.BatteryStatus, dataType: 'uint8' },
+    { data: batteryStatus.x, dataType: 'uint16' },
+    { data: batteryStatus.y, dataType: 'uint16' },
+    { data: batteryStatus.fontSize, dataType: 'uint8' },
+    { data: batteryStatus.color, dataType: 'uint8' },
+  ]
+}
+
 function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
   return widgets.flatMap((w) => {
     if (w.widgetType === WidgetType.Button) {
@@ -235,6 +260,8 @@ export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
       return packLine(w)
     } else if (w.widgetType === WidgetType.Image) {
       return packImage(w)
+    } else if (w.widgetType === WidgetType.BatteryStatus) {
+      return packBatteryStatus(w)
     }
     return []
   })

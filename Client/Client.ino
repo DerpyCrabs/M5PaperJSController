@@ -105,6 +105,8 @@ void drawWidget(uint8_t widgetType, size_t &offset) {
     drawLine(offset);
   } else if (widgetType == 4) {
     drawImage(offset);
+  } else if (widgetType == 5) {
+    drawBatteryStatus(offset);
   } else {
     Serial.printf("  Widget type: Unknown\n");
   }
@@ -182,9 +184,42 @@ void drawImage(size_t &offset) {
   for (uint32_t i = 0; i < h; i++) {
     for (uint32_t j = 0; j < w; j++) {
       uint32_t color = readUint8(offset);
-      canvas.drawPixel(x+j, y+i, color == 1 ? 15 : 0);
+      canvas.drawPixel(x + j, y + i, color == 1 ? 15 : 0);
     }
   }
+}
+
+void drawBatteryStatus(size_t &offset) {
+  Serial.printf("  Widget type: BatteryStatus\n");
+  uint32_t x = readUint16(offset);
+  uint32_t y = readUint16(offset);
+  uint32_t fontSize = readUint8(offset);
+  uint32_t color = readUint8(offset);
+  Serial.printf("    x: %d, y: %d, fontSize: %d, color: %d\n", x, y, fontSize, color);
+
+  int batteryLevel = readBatteryStatus();
+  uint32_t displayedLevel =
+    batteryLevel < 20
+      ? 20
+    : batteryLevel < 40
+      ? 40
+    : batteryLevel < 60
+      ? 60
+    : batteryLevel < 80
+      ? 80
+      : 100;
+
+  canvas.setTextColor(color);
+  canvas.setTextSize(fontSize);
+  canvas.setTextDatum(MC_DATUM);
+  canvas.drawString(String(displayedLevel) + "%", x, y);
+}
+
+int readBatteryStatus() {
+  uint32_t voltage = M5.getBatteryVoltage();
+  float voltageF = voltage / 1000.0f;
+  float percentage = ((voltageF - 3.2f) / 1.05f) * 100;
+  return percentage;
 }
 
 void handleTouchInput() {

@@ -102,8 +102,16 @@ class TodoApp {
       },
       ...this.tasks.flatMap(this.renderTask),
       { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
+      {
+        widgetType: WidgetType.BatteryStatus,
+        x: 540 - 30,
+        y: 20,
+        fontSize: 2,
+        color: 15,
+      },
     ]
   }
+
   reactToTouch(pressedAreaId?: string) {
     if (pressedAreaId && /task:.*/g.test(pressedAreaId)) {
       const taskIndex = Number(pressedAreaId.split(':')[1])
