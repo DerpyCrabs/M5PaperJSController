@@ -90,6 +90,15 @@ class TodoApp {
         fontSize: 4,
         color: 15,
       },
+      {
+        widgetType: WidgetType.Rect,
+        x: 118,
+        y: 18,
+        w: 300,
+        h: 40,
+        roundRadius: 6,
+        color: 15,
+      },
       ...this.tasks.flatMap(this.renderTask),
       { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
     ]

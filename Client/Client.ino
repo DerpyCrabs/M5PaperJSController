@@ -123,8 +123,14 @@ void drawRect(size_t &offset) {
   offset += 2;
   uint32_t color = widgetData[offset];
   offset += 1;
-  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
-  canvas.drawRect(x, y, w, h, color);
+  uint32_t roundRadius = widgetData[offset];
+  offset += 1;
+  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d, roundRadius: %d\n", x, y, w, h, color, roundRadius);
+  if (roundRadius > 0) {
+    canvas.drawRoundRect(x, y, w, h, roundRadius, color);
+  } else {
+    canvas.drawRect(x, y, w, h, color);
+  }
 }
 
 void drawLabel(size_t &offset) {
@@ -186,7 +192,7 @@ void drawImage(size_t &offset) {
   uint32_t color = widgetData[offset];
   offset += 1;
   Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
-  
+
   for (uint32_t i = 0; i < h; i++) {
     for (uint32_t j = 0; j < w; j++) {
       uint32_t color = widgetData[offset];

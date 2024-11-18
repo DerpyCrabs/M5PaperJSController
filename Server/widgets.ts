@@ -42,6 +42,7 @@ export type Color = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 
 // w: uint16
 // h: uint16
 // color: uint8
+// roundRadius: uint8
 export type RectWidget = {
   widgetType: WidgetType.Rect
   x: number
@@ -49,6 +50,7 @@ export type RectWidget = {
   w: number
   h: number
   color: Color
+  roundRadius?: number
   id?: string
 }
 
@@ -133,6 +135,7 @@ function packRect(rect: RectWidget): DataDescription[] {
     { data: rect.w, dataType: 'uint16' },
     { data: rect.h, dataType: 'uint16' },
     { data: rect.color, dataType: 'uint8' },
+    { data: rect.roundRadius || 0, dataType: 'uint8' },
   ]
 }
 
