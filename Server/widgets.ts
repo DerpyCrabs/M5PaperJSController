@@ -168,7 +168,14 @@ export type ButtonWidget = {
   id?: string
 }
 
-export type PrimitiveWidget = LabelWidget | LineWidget | RectWidget | ImageWidget | BatteryStatusWidget | TemperatureWidget | HumidityWidget
+export type PrimitiveWidget =
+  | LabelWidget
+  | LineWidget
+  | RectWidget
+  | ImageWidget
+  | BatteryStatusWidget
+  | TemperatureWidget
+  | HumidityWidget
 export type CompositeWidget = ButtonWidget
 export type Widget = CompositeWidget | PrimitiveWidget
 

@@ -136,6 +136,10 @@ class TodoApp {
 
 const app = new TodoApp()
 
+export enum EventType {
+  Touch = 1,
+}
+
 Bun.serve({
   async fetch(req) {
     if (req.method === 'GET') {
@@ -144,14 +148,23 @@ Bun.serve({
       console.log(`GET request: sent ${widgets.length} widgets`)
       return new Response(payload)
     } else {
-      const body = await req.text()
-      const parts = body.slice(0, -1).split(',')
-      const [x, y] = [Number(parts[0]), Number(parts[1])]
+      const body = await req.arrayBuffer()
+      const view = new DataView(body)
+      const eventType = view.getUint8(0)
+      const x = view.getUint16(1)
+      const y = view.getUint16(3)
 
       const widgets = app.getWidgets()
       let reactionCount = 0
       widgets.forEach((w) => {
-        if (w.widgetType === WidgetType.Button && x >= w.x && x <= w.x + w.w && y >= w.y && y <= w.y + w.h) {
+        if (
+          eventType === EventType.Touch &&
+          w.widgetType === WidgetType.Button &&
+          x >= w.x &&
+          x <= w.x + w.w &&
+          y >= w.y &&
+          y <= w.y + w.h
+        ) {
           app.reactToTouch(w.id)
           reactionCount += 1
         }

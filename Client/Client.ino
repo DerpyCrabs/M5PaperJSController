@@ -290,10 +290,13 @@ void handleTouchInput() {
 
 void sendTouchData(int x, int y) {
   httpClient.begin(serverUrl);
-  int payloadSize = 3 + 1 + 3 + 1;
+  int payloadSize = 5; // 1 uint8_t for EventType and 2 uint16_t integers for x and y
   uint8_t *payload = (uint8_t *)ps_malloc(payloadSize);
-  sprintf((char *)payload, "%d,%d", x, y);
-  payload[payloadSize - 1] = 0;
+  payload[0] = 1; // EventType.Touch
+  payload[1] = (x >> 8) & 0xFF;
+  payload[2] = x & 0xFF;
+  payload[3] = (y >> 8) & 0xFF;
+  payload[4] = y & 0xFF;
   int httpCode = httpClient.POST(payload, payloadSize);
   if (httpCode != HTTP_CODE_OK) {
     log_e("HTTP ERROR: %d\n", httpCode);
