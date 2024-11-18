@@ -82,15 +82,6 @@ class TodoApp {
   getWidgets(): Widget[] {
     return [
       {
-        widgetType: WidgetType.Label,
-        x: 540 / 2,
-        y: 40,
-        text: 'Todo App MVP',
-        datum: TextDatum.MiddleCenter,
-        fontSize: 4,
-        color: 15,
-      },
-      {
         widgetType: WidgetType.Rect,
         x: 118,
         y: 18,
@@ -98,6 +89,16 @@ class TodoApp {
         h: 40,
         roundRadius: 6,
         color: 15,
+        fill: true,
+      },
+      {
+        widgetType: WidgetType.Label,
+        x: 540 / 2,
+        y: 40,
+        text: 'Todo App MVP',
+        datum: TextDatum.MiddleCenter,
+        fontSize: 4,
+        color: 0,
       },
       ...this.tasks.flatMap(this.renderTask),
       { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },

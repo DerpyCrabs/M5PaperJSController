@@ -125,11 +125,21 @@ void drawRect(size_t &offset) {
   offset += 1;
   uint32_t roundRadius = widgetData[offset];
   offset += 1;
-  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d, roundRadius: %d\n", x, y, w, h, color, roundRadius);
-  if (roundRadius > 0) {
-    canvas.drawRoundRect(x, y, w, h, roundRadius, color);
+  bool fill = widgetData[offset];
+  offset += 1;
+  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d, roundRadius: %d, fill: %d\n", x, y, w, h, color, roundRadius, fill);
+  if (fill) {
+    if (roundRadius > 0) {
+      canvas.fillRoundRect(x, y, w, h, roundRadius, color);
+    } else {
+      canvas.fillRect(x, y, w, h, color);
+    }
   } else {
-    canvas.drawRect(x, y, w, h, color);
+    if (roundRadius > 0) {
+      canvas.drawRoundRect(x, y, w, h, roundRadius, color);
+    } else {
+      canvas.drawRect(x, y, w, h, color);
+    }
   }
 }
 
