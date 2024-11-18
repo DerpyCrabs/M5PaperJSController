@@ -132,12 +132,29 @@ class TodoApp {
       this.tasks[taskIndex].completed = !(this.tasks[taskIndex].completed || false)
     }
   }
+
+  reactToButton(buttonId: EventButton) {
+    this.tasks.forEach((t) => {
+      if (buttonId === EventButton.Up) {
+        t.completed = true
+      } else if (buttonId === EventButton.Down) {
+        t.completed = false
+      }
+    })
+  }
 }
 
 const app = new TodoApp()
 
 export enum EventType {
   Touch = 1,
+  Button = 2,
+}
+
+export enum EventButton {
+  Up = 0,
+  Push = 1,
+  Down = 2,
 }
 
 Bun.serve({
@@ -151,24 +168,30 @@ Bun.serve({
       const body = await req.arrayBuffer()
       const view = new DataView(body)
       const eventType = view.getUint8(0)
-      const x = view.getUint16(1)
-      const y = view.getUint16(3)
-
       const widgets = app.getWidgets()
       let reactionCount = 0
-      widgets.forEach((w) => {
-        if (
-          eventType === EventType.Touch &&
-          w.widgetType === WidgetType.Button &&
-          x >= w.x &&
-          x <= w.x + w.w &&
-          y >= w.y &&
-          y <= w.y + w.h
-        ) {
-          app.reactToTouch(w.id)
-          reactionCount += 1
-        }
-      })
+
+      if (eventType === EventType.Button) {
+        const buttonId = view.getUint8(1)
+        app.reactToButton(buttonId as EventButton)
+        reactionCount += 1
+      } else {
+        const x = view.getUint16(1)
+        const y = view.getUint16(3)
+        widgets.forEach((w) => {
+          if (
+            eventType === EventType.Touch &&
+            w.widgetType === WidgetType.Button &&
+            x >= w.x &&
+            x <= w.x + w.w &&
+            y >= w.y &&
+            y <= w.y + w.h
+          ) {
+            app.reactToTouch(w.id)
+            reactionCount += 1
+          }
+        })
+      }
 
       const payload = getWidgetsPayload(app.getWidgets())
       console.log(`POST request: sent ${widgets.length} widgets, detected press on ${reactionCount}`)

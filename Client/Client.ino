@@ -18,7 +18,7 @@ void setup() {
 }
 
 void loop() {
-  handleTouchInput();
+  handleInput();
 }
 
 void initializeM5EPD() {
@@ -265,26 +265,39 @@ int readBatteryStatus() {
   return percentage;
 }
 
-void handleTouchInput() {
+void handleInput() {
+  bool isUpdate = false;
   if (M5.TP.available()) {
     if (!M5.TP.isFingerUp()) {
       M5.TP.update();
-      bool isUpdate = false;
       for (int i = 0; i < 2; i++) {
         tp_finger_t fingerItem = M5.TP.readFinger(i);
         if ((touchPoints[i][0] != fingerItem.x) || (touchPoints[i][1] != fingerItem.y)) {
-          isUpdate = true;
           touchPoints[i][0] = fingerItem.x;
           touchPoints[i][1] = fingerItem.y;
           Serial.printf("Finger ID:%d-->X: %d*C  Y: %d  Size: %d\r\n",
                         fingerItem.id, fingerItem.x, fingerItem.y);
           sendTouchData(fingerItem.x, fingerItem.y);
+          isUpdate = true;
         }
       }
-      if (isUpdate) {
-        displayWidgets();
-      }
     }
+  }
+
+  if (M5.BtnL.wasPressed()) {
+    sendButtonData(0);
+    isUpdate = true;
+  } else if (M5.BtnP.wasPressed()) {
+    sendButtonData(1);
+    isUpdate = true;
+  } else if (M5.BtnR.wasPressed()) {
+    sendButtonData(2);
+    isUpdate = true;
+  }
+  M5.update();
+
+  if (isUpdate) {
+    displayWidgets();
   }
 }
 
@@ -297,6 +310,51 @@ void sendTouchData(int x, int y) {
   payload[2] = x & 0xFF;
   payload[3] = (y >> 8) & 0xFF;
   payload[4] = y & 0xFF;
+  int httpCode = httpClient.POST(payload, payloadSize);
+  if (httpCode != HTTP_CODE_OK) {
+    log_e("HTTP ERROR: %d\n", httpCode);
+    httpClient.end();
+    return;
+  }
+
+  size_t size = httpClient.getSize();
+  WiFiClient *stream = httpClient.getStreamPtr();
+  uint8_t *newWidgetData = (uint8_t *)ps_malloc(size + 1);
+  if (newWidgetData == nullptr) {
+    log_e("Memory overflow.");
+    httpClient.end();
+    return;
+  }
+  newWidgetData[size] = 0;
+
+  log_d("downloading...");
+  size_t payloadOffset = 0;
+  while (httpClient.connected()) {
+    size_t len = stream->available();
+    if (!len) {
+      delay(1);
+      continue;
+    }
+    stream->readBytes(newWidgetData + payloadOffset, len);
+    payloadOffset += len;
+    log_d("%d / %d", payloadOffset, size);
+    if (payloadOffset == size) {
+      break;
+    }
+  }
+  httpClient.end();
+  if (widgetData != nullptr) {
+    free(widgetData);
+  }
+  widgetData = newWidgetData;
+}
+
+void sendButtonData(int buttonId) {
+  httpClient.begin(serverUrl);
+  int payloadSize = 2; // 1 uint8_t for EventType and 1 uint8_t for buttonId
+  uint8_t *payload = (uint8_t *)ps_malloc(payloadSize);
+  payload[0] = 2; // EventType.Button
+  payload[1] = buttonId;
   int httpCode = httpClient.POST(payload, payloadSize);
   if (httpCode != HTTP_CODE_OK) {
     log_e("HTTP ERROR: %d\n", httpCode);
