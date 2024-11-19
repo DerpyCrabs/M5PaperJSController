@@ -166,18 +166,18 @@ export enum EventButton {
   Down = 2,
 }
 
+let sentWidgets: Widget[] = []
 Bun.serve({
   async fetch(req) {
     if (req.method === 'GET') {
-      const widgets = app.getWidgets()
-      const payload = getWidgetsPayload(widgets)
-      console.log(`GET request: sent ${widgets.length} widgets`)
+      sentWidgets = app.getWidgets()
+      const payload = getWidgetsPayload(sentWidgets)
+      console.log(`GET request: sent ${sentWidgets.length} widgets`)
       return new Response(payload)
     } else {
       const body = await req.arrayBuffer()
       const view = new DataView(body)
       const eventType = view.getUint8(0)
-      const widgets = app.getWidgets()
       let reactionCount = 0
 
       if (eventType === EventType.Button) {
@@ -187,7 +187,7 @@ Bun.serve({
       } else {
         const x = view.getUint16(1)
         const y = view.getUint16(3)
-        widgets.forEach((w) => {
+        sentWidgets.forEach((w) => {
           if (
             eventType === EventType.Touch &&
             w.widgetType === WidgetType.TouchArea &&
@@ -202,8 +202,9 @@ Bun.serve({
         })
       }
 
-      const payload = getWidgetsPayload(app.getWidgets())
-      console.log(`POST request: sent ${widgets.length} widgets, detected press on ${reactionCount}`)
+      sentWidgets = app.getWidgets()
+      const payload = getWidgetsPayload(sentWidgets)
+      console.log(`POST request: sent ${sentWidgets.length} widgets, detected press on ${reactionCount}`)
       return new Response(payload)
     }
   },
