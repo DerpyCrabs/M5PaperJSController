@@ -146,7 +146,7 @@ export type TouchAreaWidget = {
   y: number
   w: number
   h: number
-  id: string
+  id: any
 }
 
 export type Widget =
@@ -271,7 +271,7 @@ export function buttonWidget({
   labelDatum?: TextDatum
   labelSize?: number
   labelMarginLeft?: number
-  touchAreaId?: string
+  touchAreaId?: any
 }): Widget[] {
   const border: RectWidget = {
     color: borderColor !== undefined ? borderColor : 15,

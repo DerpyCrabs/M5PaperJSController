@@ -62,7 +62,7 @@ class TodoApp {
         labelDatum: TextDatum.MiddleLeft,
         labelSize: 3,
         labelMarginLeft: 60,
-        touchAreaId: `task:${index}`,
+        touchAreaId: { taskIndex: index },
       }),
       {
         widgetType: WidgetType.Image,
@@ -135,10 +135,9 @@ class TodoApp {
     ]
   }
 
-  reactToTouch(pressedAreaId?: string) {
-    if (pressedAreaId && /task:.*/g.test(pressedAreaId)) {
-      const taskIndex = Number(pressedAreaId.split(':')[1])
-      this.tasks[taskIndex].completed = !(this.tasks[taskIndex].completed || false)
+  reactToTouch(pressedAreaId?: any) {
+    if (pressedAreaId?.taskIndex) {
+      this.tasks[pressedAreaId.taskIndex].completed = !(this.tasks[pressedAreaId.taskIndex].completed || false)
     }
   }
 
