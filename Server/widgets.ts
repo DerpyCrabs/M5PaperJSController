@@ -1,4 +1,4 @@
-export enum PrimitiveWidgetType {
+export enum WidgetType {
   Rect = 1,
   Label = 2,
   Line = 3,
@@ -6,17 +6,7 @@ export enum PrimitiveWidgetType {
   BatteryStatus = 5,
   Temperature = 6,
   Humidity = 7,
-}
-
-export enum WidgetType {
-  Rect = 'Rect',
-  Label = 'Label',
-  Line = 'Line',
-  Button = 'Button',
-  Image = 'Image',
-  BatteryStatus = 'BatteryStatus',
-  Temperature = 'Temperature',
-  Humidity = 'Humidity',
+  TouchArea = 999,
 }
 
 export enum TextDatum {
@@ -59,7 +49,6 @@ export type RectWidget = {
   color: Color
   roundRadius?: number
   fill?: boolean
-  id?: string
 }
 
 // Label structure
@@ -78,7 +67,6 @@ export type LabelWidget = {
   fontSize: number
   color: Color
   text: string
-  id?: string
 }
 
 // Line structure
@@ -94,7 +82,6 @@ export type LineWidget = {
   x2: number
   y2: number
   color: Color
-  id?: string
 }
 
 // Image structure
@@ -153,22 +140,16 @@ export type HumidityWidget = {
   color: Color
 }
 
-export type ButtonWidget = {
-  widgetType: WidgetType.Button
+export type TouchAreaWidget = {
+  widgetType: WidgetType.TouchArea
   x: number
   y: number
   w: number
   h: number
-  label?: string
-  borderColor?: Color
-  labelColor?: Color
-  labelDatum?: TextDatum
-  labelSize?: number
-  labelMarginLeft?: number
-  id?: string
+  id: string
 }
 
-export type PrimitiveWidget =
+export type Widget =
   | LabelWidget
   | LineWidget
   | RectWidget
@@ -176,14 +157,13 @@ export type PrimitiveWidget =
   | BatteryStatusWidget
   | TemperatureWidget
   | HumidityWidget
-export type CompositeWidget = ButtonWidget
-export type Widget = CompositeWidget | PrimitiveWidget
+  | TouchAreaWidget
 
 type DataDescription = { data: number; dataType: 'uint8' | 'uint16' | 'uint32' }
 
 function packRect(rect: RectWidget): DataDescription[] {
   return [
-    { data: PrimitiveWidgetType.Rect, dataType: 'uint8' },
+    { data: WidgetType.Rect, dataType: 'uint8' },
     { data: rect.x, dataType: 'uint16' },
     { data: rect.y, dataType: 'uint16' },
     { data: rect.w, dataType: 'uint16' },
@@ -201,7 +181,7 @@ function packLabel(label: LabelWidget): DataDescription[] {
     .map((char) => ({ data: char.charCodeAt(0), dataType: 'uint8' }))
   textData.push({ data: 0, dataType: 'uint8' }) // Null terminator
   return [
-    { data: PrimitiveWidgetType.Label, dataType: 'uint8' },
+    { data: WidgetType.Label, dataType: 'uint8' },
     { data: label.x, dataType: 'uint16' },
     { data: label.y, dataType: 'uint16' },
     { data: label.datum, dataType: 'uint8' },
@@ -214,7 +194,7 @@ function packLabel(label: LabelWidget): DataDescription[] {
 
 function packLine(line: LineWidget): DataDescription[] {
   return [
-    { data: PrimitiveWidgetType.Line, dataType: 'uint8' },
+    { data: WidgetType.Line, dataType: 'uint8' },
     { data: line.x1, dataType: 'uint16' },
     { data: line.y1, dataType: 'uint16' },
     { data: line.x2, dataType: 'uint16' },
@@ -228,7 +208,7 @@ function packImage(image: ImageWidget): DataDescription[] {
     row.pixels.map((pixel) => ({ data: pixel, dataType: 'uint8' }))
   )
   return [
-    { data: PrimitiveWidgetType.Image, dataType: 'uint8' },
+    { data: WidgetType.Image, dataType: 'uint8' },
     { data: image.x, dataType: 'uint16' },
     { data: image.y, dataType: 'uint16' },
     { data: image.w, dataType: 'uint16' },
@@ -240,7 +220,7 @@ function packImage(image: ImageWidget): DataDescription[] {
 
 function packBatteryStatus(batteryStatus: BatteryStatusWidget): DataDescription[] {
   return [
-    { data: PrimitiveWidgetType.BatteryStatus, dataType: 'uint8' },
+    { data: WidgetType.BatteryStatus, dataType: 'uint8' },
     { data: batteryStatus.x, dataType: 'uint16' },
     { data: batteryStatus.y, dataType: 'uint16' },
     { data: batteryStatus.fontSize, dataType: 'uint8' },
@@ -250,7 +230,7 @@ function packBatteryStatus(batteryStatus: BatteryStatusWidget): DataDescription[
 
 function packTemperature(temperature: TemperatureWidget): DataDescription[] {
   return [
-    { data: PrimitiveWidgetType.Temperature, dataType: 'uint8' },
+    { data: WidgetType.Temperature, dataType: 'uint8' },
     { data: temperature.x, dataType: 'uint16' },
     { data: temperature.y, dataType: 'uint16' },
     { data: temperature.fontSize, dataType: 'uint8' },
@@ -260,7 +240,7 @@ function packTemperature(temperature: TemperatureWidget): DataDescription[] {
 
 function packHumidity(humidity: HumidityWidget): DataDescription[] {
   return [
-    { data: PrimitiveWidgetType.Humidity, dataType: 'uint8' },
+    { data: WidgetType.Humidity, dataType: 'uint8' },
     { data: humidity.x, dataType: 'uint16' },
     { data: humidity.y, dataType: 'uint16' },
     { data: humidity.fontSize, dataType: 'uint8' },
@@ -268,33 +248,65 @@ function packHumidity(humidity: HumidityWidget): DataDescription[] {
   ]
 }
 
-function unwrapCompositeWidgets(widgets: Widget[]): PrimitiveWidget[] {
-  return widgets.flatMap((w) => {
-    if (w.widgetType === WidgetType.Button) {
-      const border: RectWidget = {
-        color: w.borderColor !== undefined ? w.borderColor : 15,
-        x: w.x,
-        y: w.y,
-        w: w.w,
-        h: w.h,
-        widgetType: WidgetType.Rect,
-      }
-      const label: LabelWidget | undefined = w.label
-        ? {
-            widgetType: WidgetType.Label,
-            datum: w.labelDatum || TextDatum.MiddleCenter,
-            x: w.x + (w.labelMarginLeft !== undefined ? w.labelMarginLeft : w.w / 2),
-            y: w.y + w.h / 2,
-            text: w.label,
-            color: w.labelColor !== undefined ? w.labelColor : 15,
-            fontSize: w.labelSize || 3,
-          }
-        : undefined
-      return label ? [border, label] : [border]
-    } else {
-      return [w]
-    }
-  })
+export function buttonWidget({
+  x,
+  y,
+  w,
+  h,
+  label,
+  borderColor,
+  labelColor,
+  labelDatum,
+  labelSize,
+  labelMarginLeft,
+  touchAreaId,
+}: {
+  x: number
+  y: number
+  w: number
+  h: number
+  label?: string
+  borderColor?: Color
+  labelColor?: Color
+  labelDatum?: TextDatum
+  labelSize?: number
+  labelMarginLeft?: number
+  touchAreaId?: string
+}): Widget[] {
+  const border: RectWidget = {
+    color: borderColor !== undefined ? borderColor : 15,
+    x: x,
+    y: y,
+    w: w,
+    h: h,
+    widgetType: WidgetType.Rect,
+  }
+  const labelWidget: LabelWidget[] = label
+    ? [
+        {
+          widgetType: WidgetType.Label,
+          datum: labelDatum || TextDatum.MiddleCenter,
+          x: x + (labelMarginLeft !== undefined ? labelMarginLeft : w / 2),
+          y: y + h / 2,
+          text: label,
+          color: labelColor !== undefined ? labelColor : 15,
+          fontSize: labelSize || 3,
+        },
+      ]
+    : []
+  const touchArea: TouchAreaWidget[] = touchAreaId
+    ? [
+        {
+          widgetType: WidgetType.TouchArea,
+          x,
+          y,
+          w,
+          h,
+          id: touchAreaId,
+        },
+      ]
+    : []
+  return [border, ...labelWidget, ...touchArea]
 }
 
 function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
@@ -307,8 +319,7 @@ function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
 }
 
 export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
-  const primitiveWidgets = unwrapCompositeWidgets(widgets)
-  const dataDescriptions: DataDescription[] = primitiveWidgets.flatMap((w) => {
+  const dataDescriptions: DataDescription[] = widgets.flatMap((w) => {
     if (w.widgetType === WidgetType.Rect) {
       return packRect(w)
     } else if (w.widgetType === WidgetType.Label) {
@@ -331,7 +342,7 @@ export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
   const payload = new ArrayBuffer(payloadSize)
   const payloadView = new DataView(payload)
   let offset = 0
-  payloadView.setUint16(0, primitiveWidgets.length)
+  payloadView.setUint16(0, widgets.filter((w) => w.widgetType !== WidgetType.TouchArea).length)
   offset += 2
 
   dataDescriptions.forEach(({ data, dataType }) => {

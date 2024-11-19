@@ -1,4 +1,12 @@
-import { TextDatum, WidgetType, getWidgetsPayload, type ImageWidget, type LineWidget, type Widget } from './widgets'
+import {
+  TextDatum,
+  WidgetType,
+  getWidgetsPayload,
+  type ImageWidget,
+  type LineWidget,
+  type Widget,
+  buttonWidget,
+} from './widgets'
 import bmp from 'bmp-js'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -43,18 +51,19 @@ class TodoApp {
 
   renderTask(task: Task, index: number): Widget[] {
     return [
-      {
-        widgetType: WidgetType.Button,
+      ...buttonWidget({
         x: 0,
         y: 75 + index * 60,
         w: 540,
         h: 60,
-        borderColor: 0,
         label: task.name,
-        labelMarginLeft: 60,
+        borderColor: 0,
+        labelColor: 15,
         labelDatum: TextDatum.MiddleLeft,
-        id: `task:${index}`,
-      },
+        labelSize: 3,
+        labelMarginLeft: 60,
+        touchAreaId: `task:${index}`,
+      }),
       {
         widgetType: WidgetType.Image,
         x: 14,
@@ -181,7 +190,7 @@ Bun.serve({
         widgets.forEach((w) => {
           if (
             eventType === EventType.Touch &&
-            w.widgetType === WidgetType.Button &&
+            w.widgetType === WidgetType.TouchArea &&
             x >= w.x &&
             x <= w.x + w.w &&
             y >= w.y &&
