@@ -27,6 +27,7 @@ export enum TextDatum {
 export type Color = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15
 
 // Packet structure
+// updateTimer: uint32
 // widgetCount: uint16
 // for i in widgetCount:
 //   widgetType: uint8
@@ -160,6 +161,8 @@ export type Widget =
   | TouchAreaWidget
 
 type DataDescription = { data: number; dataType: 'uint8' | 'uint16' | 'uint32' }
+
+export type PayloadInfo = { widgets: Widget[]; updateTimer?: number }
 
 function packRect(rect: RectWidget): DataDescription[] {
   return [
@@ -318,33 +321,33 @@ function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
   }, 0)
 }
 
-export function getWidgetsPayload(widgets: Widget[]): ArrayBuffer {
-  const dataDescriptions: DataDescription[] = widgets.flatMap((w) => {
-    if (w.widgetType === WidgetType.Rect) {
-      return packRect(w)
-    } else if (w.widgetType === WidgetType.Label) {
-      return packLabel(w)
-    } else if (w.widgetType === WidgetType.Line) {
-      return packLine(w)
-    } else if (w.widgetType === WidgetType.Image) {
-      return packImage(w)
-    } else if (w.widgetType === WidgetType.BatteryStatus) {
-      return packBatteryStatus(w)
-    } else if (w.widgetType === WidgetType.Temperature) {
-      return packTemperature(w)
-    } else if (w.widgetType === WidgetType.Humidity) {
-      return packHumidity(w)
-    }
-    return []
-  })
+export function getPayload({ widgets, updateTimer }: PayloadInfo): ArrayBuffer {
+  const dataDescriptions: DataDescription[] = [
+    { data: updateTimer || 0, dataType: 'uint32' },
+    { data: widgets.filter((w) => w.widgetType !== WidgetType.TouchArea).length, dataType: 'uint16' },
+    ...widgets.flatMap((w) => {
+      if (w.widgetType === WidgetType.Rect) {
+        return packRect(w)
+      } else if (w.widgetType === WidgetType.Label) {
+        return packLabel(w)
+      } else if (w.widgetType === WidgetType.Line) {
+        return packLine(w)
+      } else if (w.widgetType === WidgetType.Image) {
+        return packImage(w)
+      } else if (w.widgetType === WidgetType.BatteryStatus) {
+        return packBatteryStatus(w)
+      } else if (w.widgetType === WidgetType.Temperature) {
+        return packTemperature(w)
+      } else if (w.widgetType === WidgetType.Humidity) {
+        return packHumidity(w)
+      }
+      return []
+    }),
+  ]
 
-  const payloadSize = 2 + calculatePayloadSize(dataDescriptions)
-  const payload = new ArrayBuffer(payloadSize)
+  const payload = new ArrayBuffer(calculatePayloadSize(dataDescriptions))
   const payloadView = new DataView(payload)
   let offset = 0
-  payloadView.setUint16(0, widgets.filter((w) => w.widgetType !== WidgetType.TouchArea).length)
-  offset += 2
-
   dataDescriptions.forEach(({ data, dataType }) => {
     if (dataType === 'uint8') {
       payloadView.setUint8(offset, data)

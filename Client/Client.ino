@@ -6,6 +6,8 @@ M5EPD_Canvas canvas(&M5.EPD);
 HTTPClient httpClient;
 uint8_t *widgetData = nullptr;
 int touchPoints[2][2];
+uint32_t updateTimer = 0;
+uint32_t lastUpdateTickCount = 0;
 
 const char *ssid = "MGTS_GPON_0B4F";
 const char *password = "UG9GNRTT";
@@ -19,10 +21,14 @@ void setup() {
 
 void loop() {
   handleInput();
+  if (updateTimer != 0 && (xTaskGetTickCount() - lastUpdateTickCount >= updateTimer * 1000)) {
+    fetchAndDisplayWidgets();
+  }
+  delay(100);
 }
 
 void initializeM5EPD() {
-  M5.begin();
+  M5.begin(true, false, true, true, false);
   M5.SHT30.Begin();
   M5.EPD.SetRotation(90);
   M5.TP.SetRotation(90);
@@ -82,11 +88,16 @@ bool fetchWidgetData() {
     }
   }
   httpClient.end();
+  lastUpdateTickCount = xTaskGetTickCount();
   return true;
 }
 
 void displayWidgets() {
   size_t offset = 0;
+  updateTimer = readUint32(offset);
+  if (updateTimer != 0) {
+    Serial.printf("Will update in %d seconds", updateTimer);
+  }
   uint16_t widgetCount = readUint16(offset);
   Serial.printf("Widget count: %d\n", (size_t)widgetCount);
   canvas.fillCanvas(0);
@@ -347,6 +358,7 @@ void sendTouchData(int x, int y) {
     free(widgetData);
   }
   widgetData = newWidgetData;
+  lastUpdateTickCount = xTaskGetTickCount();
 }
 
 void sendButtonData(int buttonId) {
@@ -392,6 +404,13 @@ void sendButtonData(int buttonId) {
     free(widgetData);
   }
   widgetData = newWidgetData;
+  lastUpdateTickCount = xTaskGetTickCount();
+}
+
+uint32_t readUint32(size_t &offset) {
+  uint32_t value = (widgetData[offset] << 24) | (widgetData[offset + 1] << 16) | (widgetData[offset + 2] << 8) | widgetData[offset + 3];
+  offset += 4;
+  return value;
 }
 
 uint16_t readUint16(size_t &offset) {

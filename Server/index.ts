@@ -1,11 +1,12 @@
 import {
   TextDatum,
   WidgetType,
-  getWidgetsPayload,
+  getPayload,
   type ImageWidget,
   type LineWidget,
   type Widget,
   buttonWidget,
+  type PayloadInfo,
 } from './widgets'
 import bmp from 'bmp-js'
 import fs from 'node:fs'
@@ -88,51 +89,63 @@ class TodoApp {
     ]
   }
 
-  getWidgets(): Widget[] {
-    return [
-      {
-        widgetType: WidgetType.Rect,
-        x: 118,
-        y: 28,
-        w: 300,
-        h: 40,
-        roundRadius: 6,
-        color: 15,
-        fill: true,
-      },
-      {
-        widgetType: WidgetType.Label,
-        x: 540 / 2,
-        y: 50,
-        text: 'Todo App MVP',
-        datum: TextDatum.MiddleCenter,
-        fontSize: 4,
-        color: 0,
-      },
-      ...this.tasks.flatMap(this.renderTask),
-      { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
-      {
-        widgetType: WidgetType.BatteryStatus,
-        x: 540 - 30,
-        y: 20,
-        fontSize: 2,
-        color: 15,
-      },
-      {
-        widgetType: WidgetType.Temperature,
-        x: 540 - 105,
-        y: 20,
-        fontSize: 2,
-        color: 15,
-      },
-      {
-        widgetType: WidgetType.Humidity,
-        x: 540 - 170,
-        y: 20,
-        fontSize: 2,
-        color: 15,
-      },
-    ]
+  getPayloadInfo(): PayloadInfo {
+    return {
+      updateTimer: this.tasks.every((t) => t.completed) ? 0 : 3,
+      widgets: [
+        {
+          widgetType: WidgetType.Rect,
+          x: 118,
+          y: 28,
+          w: 300,
+          h: 40,
+          roundRadius: 6,
+          color: 15,
+          fill: true,
+        },
+        {
+          widgetType: WidgetType.Label,
+          x: 540 / 2,
+          y: 50,
+          text: 'Todo App MVP',
+          datum: TextDatum.MiddleCenter,
+          fontSize: 4,
+          color: 0,
+        },
+        ...this.tasks.flatMap(this.renderTask),
+        { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
+        {
+          widgetType: WidgetType.BatteryStatus,
+          x: 540 - 30,
+          y: 20,
+          fontSize: 2,
+          color: 15,
+        },
+        {
+          widgetType: WidgetType.Temperature,
+          x: 540 - 105,
+          y: 20,
+          fontSize: 2,
+          color: 15,
+        },
+        {
+          widgetType: WidgetType.Humidity,
+          x: 540 - 170,
+          y: 20,
+          fontSize: 2,
+          color: 15,
+        },
+        {
+          widgetType: WidgetType.Label,
+          x: 540 / 2,
+          y: 600,
+          text: new Date().toISOString(),
+          datum: TextDatum.MiddleCenter,
+          fontSize: 2,
+          color: 15,
+        },
+      ],
+    }
   }
 
   reactToTouch(pressedAreaId?: any) {
@@ -169,8 +182,9 @@ let sentWidgets: Widget[] = []
 Bun.serve({
   async fetch(req) {
     if (req.method === 'GET') {
-      sentWidgets = app.getWidgets()
-      const payload = getWidgetsPayload(sentWidgets)
+      const payloadInfo = app.getPayloadInfo()
+      sentWidgets = payloadInfo.widgets
+      const payload = getPayload(payloadInfo)
       console.log(`GET request: sent ${sentWidgets.length} widgets`)
       return new Response(payload)
     } else {
@@ -201,8 +215,9 @@ Bun.serve({
         })
       }
 
-      sentWidgets = app.getWidgets()
-      const payload = getWidgetsPayload(sentWidgets)
+      const payloadInfo = app.getPayloadInfo()
+      sentWidgets = payloadInfo.widgets
+      const payload = getPayload(payloadInfo)
       console.log(`POST request: sent ${sentWidgets.length} widgets, detected press on ${reactionCount}`)
       return new Response(payload)
     }
