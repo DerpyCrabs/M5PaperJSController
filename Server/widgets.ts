@@ -260,6 +260,13 @@ function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
   }, 0)
 }
 
+export function composePayloadInfo(payloadInfo: PayloadInfo[]): PayloadInfo {
+  return {
+    updateTimer: Math.min(...payloadInfo.flatMap((p) => (p.updateTimer ? [p.updateTimer] : []))),
+    widgets: payloadInfo.flatMap((p) => p.widgets),
+  }
+}
+
 export function getPayload({ widgets, updateTimer }: PayloadInfo): ArrayBuffer {
   const dataDescriptions: DataDescription[] = [
     { data: updateTimer || 0, dataType: 'uint32' },

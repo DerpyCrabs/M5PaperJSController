@@ -1,26 +1,33 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo, composePayloadInfo } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
+import { StopwatchWidget } from './widgets/stopwatch'
 
 class DashboardApp {
   mdTasks: MdTasksWidget
   dateWidget: DateWidget
   dateWidget2: DateWidget
+  stopwatchWidget: StopwatchWidget
   constructor() {
     this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 100, y: 100, w: 440, h: 860 })
     this.dateWidget = new DateWidget('dd.MM.uuuu', { x: 0, y: 0, w: 540, h: 80 })
     this.dateWidget2 = new DateWidget('EEEE | MMMM', { x: 0, y: 80, w: 540, h: 80 })
+    this.stopwatchWidget = new StopwatchWidget({ x: 90, y: 700 })
   }
 
   getPayloadInfo(): PayloadInfo {
-    return {
-      updateTimer: 300,
-      widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
-    }
+    return composePayloadInfo([
+      {
+        updateTimer: 300,
+        widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
+      },
+      this.stopwatchWidget.getPayloadInfo(),
+    ])
   }
 
   reactToTouch(pressedAreaId?: any) {
     this.mdTasks.reactToTouch(pressedAreaId)
+    this.stopwatchWidget.reactToTouch(pressedAreaId)
   }
 
   reactToButton(buttonId: EventButton) {}
