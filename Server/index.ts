@@ -1,171 +1,26 @@
-import {
-  TextDatum,
-  WidgetType,
-  getPayload,
-  type ImageWidget,
-  type LineWidget,
-  type Widget,
-  buttonWidget,
-  type PayloadInfo,
-} from './widgets'
-import bmp from 'bmp-js'
-import fs from 'node:fs'
-import path from 'node:path'
+import { WidgetType, getPayload, type Widget, type PayloadInfo } from './widgets'
+import { MdTasksWidget } from './mdTasks'
 
-const checkedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'checked.bmp')))
-const uncheckedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'unchecked.bmp')))
-
-function bmpToPixelData(bmp: bmp.BmpDecoder): ImageWidget['pixelData'] {
-  const w = bmp.width
-  const h = bmp.height
-  const data: ImageWidget['pixelData'] = { rows: [...Array(h)].map(() => ({ pixels: [...Array(w).fill(0)] })) }
-
-  data.rows.forEach((row, i) => {
-    row.pixels.forEach((pixel, j) => {
-      const r = bmp.data[i * 4 * h + j * 4 + 1]
-      data.rows[i].pixels[j] = r !== 0 ? 0 : 1
-    })
-  })
-
-  return data
-}
-
-type Task = {
-  name: string
-  completed?: boolean
-}
-
-class TodoApp {
-  tasks: Task[] = [
-    {
-      name: 'buy bread',
-    },
-    {
-      name: 'add colors',
-    },
-    {
-      name: 'complete todo app',
-    },
-  ]
-
-  constructor() {}
-
-  renderTask(task: Task, index: number): Widget[] {
-    return [
-      ...buttonWidget({
-        x: 0,
-        y: 75 + index * 60,
-        w: 540,
-        h: 60,
-        label: task.name,
-        borderColor: 0,
-        labelColor: 15,
-        labelDatum: TextDatum.MiddleLeft,
-        labelSize: 3,
-        labelMarginLeft: 60,
-        touchAreaId: { taskIndex: index },
-      }),
-      {
-        widgetType: WidgetType.Image,
-        x: 14,
-        y: 88 + index * 60,
-        w: 32,
-        h: 32,
-        color: 15,
-        pixelData: bmpToPixelData(task.completed ? checkedIcon : uncheckedIcon),
-      },
-      ...(task.completed
-        ? [
-            {
-              widgetType: WidgetType.Line,
-              x1: 55,
-              x2: 55 + task.name.length * 18 + 8,
-              y1: 105 + index * 60,
-              y2: 105 + index * 60,
-              color: 15,
-            } as LineWidget,
-          ]
-        : []),
-    ]
+class DashboardApp {
+  mdTasks: MdTasksWidget
+  constructor() {
+    this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 100, y: 100, w: 440, h: 860 })
   }
 
   getPayloadInfo(): PayloadInfo {
     return {
-      updateTimer: this.tasks.every((t) => t.completed) ? 0 : 3,
-      widgets: [
-        {
-          widgetType: WidgetType.Rect,
-          x: 118,
-          y: 28,
-          w: 300,
-          h: 40,
-          roundRadius: 6,
-          color: 15,
-          fill: true,
-        },
-        {
-          widgetType: WidgetType.Label,
-          x: 540 / 2,
-          y: 50,
-          text: 'Todo App MVP',
-          datum: TextDatum.MiddleCenter,
-          fontSize: 4,
-          color: 0,
-        },
-        ...this.tasks.flatMap(this.renderTask),
-        { widgetType: WidgetType.Line, x1: 0, y1: 75, x2: 540, y2: 75, color: 15 },
-        {
-          widgetType: WidgetType.BatteryStatus,
-          x: 540 - 30,
-          y: 20,
-          fontSize: 2,
-          color: 15,
-        },
-        {
-          widgetType: WidgetType.Temperature,
-          x: 540 - 105,
-          y: 20,
-          fontSize: 2,
-          color: 15,
-        },
-        {
-          widgetType: WidgetType.Humidity,
-          x: 540 - 170,
-          y: 20,
-          fontSize: 2,
-          color: 15,
-        },
-        {
-          widgetType: WidgetType.Label,
-          x: 540 / 2,
-          y: 600,
-          text: new Date().toISOString(),
-          datum: TextDatum.MiddleCenter,
-          fontSize: 2,
-          color: 15,
-        },
-      ],
+      widgets: this.mdTasks.getWidgets(),
     }
   }
 
   reactToTouch(pressedAreaId?: any) {
-    if (pressedAreaId?.taskIndex) {
-      this.tasks[pressedAreaId.taskIndex].completed = !(this.tasks[pressedAreaId.taskIndex].completed || false)
-    }
+    this.mdTasks.reactToTouch(pressedAreaId)
   }
 
-  reactToButton(buttonId: EventButton) {
-    this.tasks.forEach((t) => {
-      if (buttonId === EventButton.Up) {
-        t.completed = true
-      } else if (buttonId === EventButton.Down) {
-        t.completed = false
-      }
-    })
-  }
+  reactToButton(buttonId: EventButton) {}
 }
 
-const app = new TodoApp()
+const app = new DashboardApp()
 
 export enum EventType {
   Touch = 1,
