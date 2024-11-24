@@ -12,8 +12,10 @@ uint32_t lastUpdateTickCount = 0;
 const char *ssid = "MGTS_GPON_0B4F";
 const char *password = "UG9GNRTT";
 const char *serverUrl = "http://192.168.1.65:3377";
+bool sht30Initialized = false;
 
 void setup() {
+  setCpuFrequencyMhz(80);
   initializeM5EPD();
   connectToWiFi();
   fetchAndDisplayWidgets();
@@ -29,7 +31,6 @@ void loop() {
 
 void initializeM5EPD() {
   M5.begin(true, false, true, true, false);
-  M5.SHT30.Begin();
   M5.EPD.SetRotation(90);
   M5.TP.SetRotation(90);
   M5.EPD.Clear(true);
@@ -239,6 +240,10 @@ void drawTemperature(size_t &offset) {
   uint32_t color = readUint8(offset);
   Serial.printf("    x: %d, y: %d, fontSize: %d, color: %d\n", x, y, fontSize, color);
 
+  if (!sht30Initialized) {
+    M5.SHT30.Begin();
+    sht30Initialized = true;
+  }
   M5.SHT30.UpdateData();
   float temperature = M5.SHT30.GetTemperature();
   char temperatureString[10];
@@ -258,6 +263,10 @@ void drawHumidity(size_t &offset) {
   uint32_t color = readUint8(offset);
   Serial.printf("    x: %d, y: %d, fontSize: %d, color: %d\n", x, y, fontSize, color);
 
+  if (!sht30Initialized) {
+    M5.SHT30.Begin();
+    sht30Initialized = true;
+  }
   M5.SHT30.UpdateData();
   float humidity = M5.SHT30.GetRelHumidity();
   char humidityString[10];
@@ -314,9 +323,9 @@ void handleInput() {
 
 void sendTouchData(int x, int y) {
   httpClient.begin(serverUrl);
-  int payloadSize = 5; // 1 uint8_t for EventType and 2 uint16_t integers for x and y
+  int payloadSize = 5;  // 1 uint8_t for EventType and 2 uint16_t integers for x and y
   uint8_t *payload = (uint8_t *)ps_malloc(payloadSize);
-  payload[0] = 1; // EventType.Touch
+  payload[0] = 1;  // EventType.Touch
   payload[1] = (x >> 8) & 0xFF;
   payload[2] = x & 0xFF;
   payload[3] = (y >> 8) & 0xFF;
@@ -363,9 +372,9 @@ void sendTouchData(int x, int y) {
 
 void sendButtonData(int buttonId) {
   httpClient.begin(serverUrl);
-  int payloadSize = 2; // 1 uint8_t for EventType and 1 uint8_t for buttonId
+  int payloadSize = 2;  // 1 uint8_t for EventType and 1 uint8_t for buttonId
   uint8_t *payload = (uint8_t *)ps_malloc(payloadSize);
-  payload[0] = 2; // EventType.Button
+  payload[0] = 2;  // EventType.Button
   payload[1] = buttonId;
   int httpCode = httpClient.POST(payload, payloadSize);
   if (httpCode != HTTP_CODE_OK) {

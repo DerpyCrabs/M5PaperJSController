@@ -14,6 +14,7 @@ class DashboardApp {
 
   getPayloadInfo(): PayloadInfo {
     return {
+      updateTimer: 300,
       widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
     }
   }
