@@ -1,26 +1,11 @@
 import { TextDatum, WidgetType, type ImageWidget, type LineWidget, type Widget } from '../widgets'
 import fs from 'node:fs'
-import bmp from 'bmp-js'
 import path from 'node:path'
 import { buttonWidget } from './button'
+import { readBmpIcon } from '../utils'
 
-const checkedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, '..', 'Assets', 'checked.bmp')))
-const uncheckedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, '..', 'Assets', 'unchecked.bmp')))
-
-function bmpToPixelData(bmp: bmp.BmpDecoder): ImageWidget['pixelData'] {
-  const w = bmp.width
-  const h = bmp.height
-  const data: ImageWidget['pixelData'] = { rows: [...Array(h)].map(() => ({ pixels: [...Array(w).fill(0)] })) }
-
-  data.rows.forEach((row, i) => {
-    row.pixels.forEach((pixel, j) => {
-      const r = bmp.data[i * 4 * h + j * 4 + 1]
-      data.rows[i].pixels[j] = r !== 0 ? 0 : 1
-    })
-  })
-
-  return data
-}
+const checkedIcon = readBmpIcon(path.join(__dirname, '..', 'Assets', 'checked.bmp'))
+const uncheckedIcon = readBmpIcon(path.join(__dirname, '..', 'Assets', 'unchecked.bmp'))
 
 export class MdTasksWidget {
   constructor(public filePath: string, public position: { x: number; y: number; w: number; h: number }) {}
@@ -84,7 +69,7 @@ export class MdTasksWidget {
               w: 32,
               h: 32,
               color: 15,
-              pixelData: bmpToPixelData(task.completed ? checkedIcon : uncheckedIcon),
+              pixelData: task.completed ? checkedIcon : uncheckedIcon,
             },
             ...(task.completed
               ? [
