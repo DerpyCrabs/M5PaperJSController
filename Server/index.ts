@@ -1,15 +1,20 @@
 import { WidgetType, getPayload, type Widget, type PayloadInfo } from './widgets'
-import { MdTasksWidget } from './mdTasks'
+import { DateWidget } from './widgets/date'
+import { MdTasksWidget } from './widgets/mdTasks'
 
 class DashboardApp {
   mdTasks: MdTasksWidget
+  dateWidget: DateWidget
+  dateWidget2: DateWidget
   constructor() {
     this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 100, y: 100, w: 440, h: 860 })
+    this.dateWidget = new DateWidget('dd.MM.uuuu', { x: 0, y: 0, w: 540, h: 80 })
+    this.dateWidget2 = new DateWidget('EEEE | MMMM', { x: 0, y: 80, w: 540, h: 80 })
   }
 
   getPayloadInfo(): PayloadInfo {
     return {
-      widgets: this.mdTasks.getWidgets(),
+      widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
     }
   }
 

@@ -1,10 +1,11 @@
-import { TextDatum, WidgetType, buttonWidget, type ImageWidget, type LineWidget, type Widget } from './widgets'
+import { TextDatum, WidgetType, type ImageWidget, type LineWidget, type Widget } from '../widgets'
 import fs from 'node:fs'
 import bmp from 'bmp-js'
 import path from 'node:path'
+import { buttonWidget } from './button'
 
-const checkedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'checked.bmp')))
-const uncheckedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, 'Assets', 'unchecked.bmp')))
+const checkedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, '..', 'Assets', 'checked.bmp')))
+const uncheckedIcon = bmp.decode(fs.readFileSync(path.join(__dirname, '..', 'Assets', 'unchecked.bmp')))
 
 function bmpToPixelData(bmp: bmp.BmpDecoder): ImageWidget['pixelData'] {
   const w = bmp.width
