@@ -1,11 +1,11 @@
-import { TextDatum, WidgetType, type ImageWidget, type LineWidget, type Widget } from '../widgets'
+import { TextDatum, WidgetType, type LineWidget, type Widget } from '../widgets'
 import fs from 'node:fs'
 import path from 'node:path'
 import { buttonWidget } from './button'
-import { readBmpIcon } from '../utils'
+import { bmpIconWidget } from './bmpIcon'
 
-const checkedIcon = readBmpIcon(path.join(__dirname, '..', 'Assets', 'checked.bmp'))
-const uncheckedIcon = readBmpIcon(path.join(__dirname, '..', 'Assets', 'unchecked.bmp'))
+const checkedIconPath = path.join(__dirname, '..', 'Assets', 'checked.bmp')
+const uncheckedIconPath = path.join(__dirname, '..', 'Assets', 'unchecked.bmp')
 
 export class MdTasksWidget {
   constructor(public filePath: string, public position: { x: number; y: number; w: number; h: number }) {}
@@ -62,14 +62,11 @@ export class MdTasksWidget {
               labelMarginLeft: 60,
               touchAreaId: { type: 'task', lineNumber: index },
             }),
-            {
-              widgetType: WidgetType.Image,
+            bmpIconWidget({
+              path: task.completed ? checkedIconPath : uncheckedIconPath,
               x: this.position.x + 14,
               y: this.position.y + 28 + index * 60,
-              w: 32,
-              h: 32,
-              pixelData: task.completed ? checkedIcon : uncheckedIcon,
-            },
+            }),
             ...(task.completed
               ? [
                   {
