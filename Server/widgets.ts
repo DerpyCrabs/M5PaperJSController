@@ -96,7 +96,6 @@ export type LineWidget = {
 // y: uint16
 // w: uint16
 // h: uint16
-// color: uint8
 // pixelData: w * h bits
 export type ImageWidget = {
   widgetType: WidgetType.Image
@@ -104,8 +103,7 @@ export type ImageWidget = {
   y: number
   w: number
   h: number
-  color: Color
-  pixelData: { rows: { pixels: (0 | 1)[] }[] }
+  pixelData: { rows: { pixels: Color[] }[] }
 }
 
 // BatteryStatus structure
@@ -222,7 +220,6 @@ function packImage(image: ImageWidget): DataDescription[] {
     { data: image.y, dataType: 'uint16' },
     { data: image.w, dataType: 'uint16' },
     { data: image.h, dataType: 'uint16' },
-    { data: image.color, dataType: 'uint8' },
     ...pixelData,
   ]
 }

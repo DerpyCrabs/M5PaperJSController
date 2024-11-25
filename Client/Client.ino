@@ -196,13 +196,12 @@ void drawImage(size_t &offset) {
   uint32_t y = readUint16(offset);
   uint32_t w = readUint16(offset);
   uint32_t h = readUint16(offset);
-  uint32_t color = readUint8(offset);
-  Serial.printf("    x: %d, y: %d, w: %d, h: %d, color: %d\n", x, y, w, h, color);
+  Serial.printf("    x: %d, y: %d, w: %d, h: %d\n", x, y, w, h);
 
   for (uint32_t i = 0; i < h; i++) {
     for (uint32_t j = 0; j < w; j++) {
-      uint32_t color = readUint8(offset);
-      canvas.drawPixel(x + j, y + i, color == 1 ? 15 : 0);
+      uint32_t pixelColor = readUint8(offset);
+      canvas.drawPixel(x + j, y + i, pixelColor);
     }
   }
 }

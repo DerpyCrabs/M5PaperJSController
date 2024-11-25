@@ -68,7 +68,6 @@ export class MdTasksWidget {
               y: this.position.y + 28 + index * 60,
               w: 32,
               h: 32,
-              color: 15,
               pixelData: task.completed ? checkedIcon : uncheckedIcon,
             },
             ...(task.completed
@@ -91,8 +90,6 @@ export class MdTasksWidget {
               datum: TextDatum.MiddleLeft,
               x: this.position.x + 16,
               y: this.position.y + 45 + index * 60,
-              w: 540,
-              h: 60,
               text: task,
               fontSize: 3,
               color: 15,
