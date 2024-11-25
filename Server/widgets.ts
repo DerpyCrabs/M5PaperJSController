@@ -24,10 +24,16 @@ export enum TextDatum {
   RightBaseline = 11,
 }
 
+export enum UpdateMode {
+  UpdateModeGC16 = 2,
+  UpdateModeDU4 = 6, // Default
+}
+
 export type Color = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15
 
 // Packet structure
 // updateTimer: uint32
+// updateMode: uint8
 // widgetCount: uint16
 // for i in widgetCount:
 //   widgetType: uint8
@@ -162,7 +168,7 @@ export type Widget =
 
 type DataDescription = { data: number; dataType: 'uint8' | 'uint16' | 'uint32' }
 
-export type PayloadInfo = { widgets: Widget[]; updateTimer?: number }
+export type PayloadInfo = { widgets: Widget[]; updateTimer?: number; updateMode?: UpdateMode }
 
 function packRect(rect: RectWidget): DataDescription[] {
   return [
@@ -263,13 +269,17 @@ function calculatePayloadSize(dataDescriptions: DataDescription[]): number {
 export function composePayloadInfo(payloadInfo: PayloadInfo[]): PayloadInfo {
   return {
     updateTimer: Math.min(...payloadInfo.flatMap((p) => (p.updateTimer ? [p.updateTimer] : []))),
+    updateMode: payloadInfo.some((p) => p.updateMode === UpdateMode.UpdateModeGC16)
+      ? UpdateMode.UpdateModeGC16
+      : UpdateMode.UpdateModeDU4,
     widgets: payloadInfo.flatMap((p) => p.widgets),
   }
 }
 
-export function getPayload({ widgets, updateTimer }: PayloadInfo): ArrayBuffer {
+export function getPayload({ widgets, updateTimer, updateMode }: PayloadInfo): ArrayBuffer {
   const dataDescriptions: DataDescription[] = [
     { data: updateTimer || 0, dataType: 'uint32' },
+    { data: updateMode || UpdateMode.UpdateModeDU4, dataType: 'uint8' },
     { data: widgets.filter((w) => w.widgetType !== WidgetType.TouchArea).length, dataType: 'uint16' },
     ...widgets.flatMap((w) => {
       if (w.widgetType === WidgetType.Rect) {

@@ -1,4 +1,4 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo, UpdateMode } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'

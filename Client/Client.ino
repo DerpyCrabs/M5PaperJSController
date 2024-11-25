@@ -99,6 +99,7 @@ void displayWidgets() {
   if (updateTimer != 0) {
     Serial.printf("Will update in %d seconds", updateTimer);
   }
+  uint8_t updateMode = readUint8(offset);
   uint16_t widgetCount = readUint16(offset);
   Serial.printf("Widget count: %d\n", (size_t)widgetCount);
   canvas.fillCanvas(0);
@@ -106,7 +107,7 @@ void displayWidgets() {
     uint8_t widgetType = readUint8(offset);
     drawWidget(widgetType, offset);
   }
-  canvas.pushCanvas(0, 0, UPDATE_MODE_DU4);
+  canvas.pushCanvas(0, 0, (m5epd_update_mode_t)updateMode);
 }
 
 void drawWidget(uint8_t widgetType, size_t &offset) {
