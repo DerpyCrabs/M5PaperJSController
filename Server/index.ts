@@ -1,4 +1,4 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo, composePayloadInfo } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'
@@ -8,21 +8,24 @@ class DashboardApp {
   dateWidget: DateWidget
   dateWidget2: DateWidget
   stopwatchWidget: StopwatchWidget
+  currentPage: number
   constructor() {
-    this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 100, y: 100, w: 440, h: 860 })
+    this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 30, y: 100, w: 440, h: 860 })
     this.dateWidget = new DateWidget('dd.MM.uuuu', { x: 0, y: 0, w: 540, h: 80 })
     this.dateWidget2 = new DateWidget('EEEE | MMMM', { x: 0, y: 80, w: 540, h: 80 })
     this.stopwatchWidget = new StopwatchWidget({ x: 90, y: 700 })
+    this.currentPage = 0
   }
 
   getPayloadInfo(): PayloadInfo {
-    return composePayloadInfo([
-      {
+    if (this.currentPage === 0) {
+      return {
         updateTimer: 300,
         widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
-      },
-      this.stopwatchWidget.getPayloadInfo(),
-    ])
+      }
+    } else {
+      return this.stopwatchWidget.getPayloadInfo()
+    }
   }
 
   reactToTouch(pressedAreaId?: any) {
@@ -30,7 +33,13 @@ class DashboardApp {
     this.stopwatchWidget.reactToTouch(pressedAreaId)
   }
 
-  reactToButton(buttonId: EventButton) {}
+  reactToButton(buttonId: EventButton) {
+    if (buttonId === EventButton.Down && this.currentPage < 1) {
+      this.currentPage += 1
+    } else if (buttonId === EventButton.Up && this.currentPage > 0) {
+      this.currentPage -= 1
+    }
+  }
 }
 
 const app = new DashboardApp()
