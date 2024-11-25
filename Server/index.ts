@@ -1,30 +1,42 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo, UpdateMode } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo, UpdateMode, composePayloadInfo } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'
+import { DiskSpaceWidget } from './widgets/diskSpace'
 
 class DashboardApp {
   mdTasks: MdTasksWidget
   dateWidget: DateWidget
   dateWidget2: DateWidget
   stopwatchWidget: StopwatchWidget
+  diskSpaceCWidget: DiskSpaceWidget
+  diskSpaceDWidget: DiskSpaceWidget
+  diskSpaceEWidget: DiskSpaceWidget
   currentPage: number
   constructor() {
     this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 30, y: 100, w: 440, h: 860 })
     this.dateWidget = new DateWidget('dd.MM.uuuu', { x: 0, y: 0, w: 540, h: 80 })
     this.dateWidget2 = new DateWidget('EEEE | MMMM', { x: 0, y: 80, w: 540, h: 80 })
     this.stopwatchWidget = new StopwatchWidget({ x: 90, y: 700 })
+    this.diskSpaceCWidget = new DiskSpaceWidget('C', { x: 20, y: 800 })
+    this.diskSpaceDWidget = new DiskSpaceWidget('D', { x: 20, y: 850 })
+    this.diskSpaceEWidget = new DiskSpaceWidget('E', { x: 20, y: 900 })
     this.currentPage = 0
   }
 
-  getPayloadInfo(): PayloadInfo {
+  async getPayloadInfo(): Promise<PayloadInfo> {
     if (this.currentPage === 0) {
       return {
         updateTimer: 300,
         widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
       }
     } else {
-      return this.stopwatchWidget.getPayloadInfo()
+      return composePayloadInfo([
+        this.stopwatchWidget.getPayloadInfo(),
+        await this.diskSpaceCWidget.getPayloadInfo(),
+        await this.diskSpaceDWidget.getPayloadInfo(),
+        await this.diskSpaceEWidget.getPayloadInfo(),
+      ])
     }
   }
 
@@ -59,7 +71,7 @@ let sentWidgets: Widget[] = []
 Bun.serve({
   async fetch(req) {
     if (req.method === 'GET') {
-      const payloadInfo = app.getPayloadInfo()
+      const payloadInfo = await app.getPayloadInfo()
       sentWidgets = payloadInfo.widgets
       const payload = getPayload(payloadInfo)
       console.log(`GET request: sent ${sentWidgets.length} widgets`)
@@ -92,7 +104,7 @@ Bun.serve({
         })
       }
 
-      const payloadInfo = app.getPayloadInfo()
+      const payloadInfo = await app.getPayloadInfo()
       sentWidgets = payloadInfo.widgets
       const payload = getPayload(payloadInfo)
       console.log(`POST request: sent ${sentWidgets.length} widgets, detected press on ${reactionCount}`)
