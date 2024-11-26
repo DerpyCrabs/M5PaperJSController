@@ -1,4 +1,4 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo, UpdateMode, composePayloadInfo } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo, composePayloadInfo } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'
@@ -28,7 +28,11 @@ class DashboardApp {
     if (this.currentPage === 0) {
       return {
         updateTimer: 300,
-        widgets: [...this.mdTasks.getWidgets(), ...this.dateWidget.getWidgets(), ...this.dateWidget2.getWidgets()],
+        widgets: [
+          ...(await this.mdTasks.getWidgets()),
+          ...this.dateWidget.getWidgets(),
+          ...this.dateWidget2.getWidgets(),
+        ],
       }
     } else {
       return composePayloadInfo([

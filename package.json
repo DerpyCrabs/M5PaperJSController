@@ -9,9 +9,11 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@types/bmp-js": "^0.1.2",
-    "bmp-js": "^0.1.0",
+    "@jimp/bmp": "^0.22.12",
+    "@jimp/jpeg": "^0.22.12",
+    "@jimp/png": "^0.22.12",
     "check-disk-space": "^3.4.0",
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "jimp": "^1.6.0"
   }
 }

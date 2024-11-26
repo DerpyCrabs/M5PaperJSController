@@ -101,8 +101,6 @@ export type ImageWidget = {
   widgetType: WidgetType.Image
   x: number
   y: number
-  w: number
-  h: number
   pixelData: { rows: { pixels: Color[] }[] }
 }
 
@@ -218,8 +216,8 @@ function packImage(image: ImageWidget): DataDescription[] {
     { data: WidgetType.Image, dataType: 'uint8' },
     { data: image.x, dataType: 'uint16' },
     { data: image.y, dataType: 'uint16' },
-    { data: image.w, dataType: 'uint16' },
-    { data: image.h, dataType: 'uint16' },
+    { data: image.pixelData.rows[0].pixels.length, dataType: 'uint16' },
+    { data: image.pixelData.rows.length, dataType: 'uint16' },
     ...pixelData,
   ]
 }

@@ -2,7 +2,7 @@ import { TextDatum, WidgetType, type LineWidget, type Widget } from '../widgets'
 import fs from 'node:fs'
 import path from 'node:path'
 import { buttonWidget } from './button'
-import { bmpIconWidget } from './bmpIcon'
+import { readImage } from '../utils'
 
 const checkedIconPath = path.join(__dirname, '..', 'Assets', 'checked.bmp')
 const uncheckedIconPath = path.join(__dirname, '..', 'Assets', 'unchecked.bmp')
@@ -43,9 +43,11 @@ export class MdTasksWidget {
     }
   }
 
-  getWidgets(): Widget[] {
+  async getWidgets(): Promise<Widget[]> {
     try {
       const tasks = this.parseFile()
+      const checkedIcon = await readImage(checkedIconPath)
+      const uncheckedIcon = await readImage(uncheckedIconPath)
       return tasks.flatMap((task, index) => {
         if (typeof task !== 'string') {
           return [
@@ -62,11 +64,12 @@ export class MdTasksWidget {
               labelMarginLeft: 60,
               touchAreaId: { type: 'task', lineNumber: index },
             }),
-            bmpIconWidget({
-              path: task.completed ? checkedIconPath : uncheckedIconPath,
+            {
+              widgetType: WidgetType.Image,
+              pixelData: task.completed ? checkedIcon : uncheckedIcon,
               x: this.position.x + 14,
               y: this.position.y + 28 + index * 60,
-            }),
+            },
             ...(task.completed
               ? [
                   {
