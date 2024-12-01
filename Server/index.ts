@@ -3,6 +3,7 @@ import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'
 import { DiskSpaceWidget } from './widgets/diskSpace'
+import { CalendarWidget } from './widgets/calendar'
 
 class DashboardApp {
   mdTasks: MdTasksWidget
@@ -12,15 +13,17 @@ class DashboardApp {
   diskSpaceCWidget: DiskSpaceWidget
   diskSpaceDWidget: DiskSpaceWidget
   diskSpaceEWidget: DiskSpaceWidget
+  calendarWidget: CalendarWidget
   currentPage: number
   constructor() {
-    this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 30, y: 100, w: 440, h: 860 })
+    this.mdTasks = new MdTasksWidget('D://Notes/Notes/Tasks/Todo.md', { x: 20, y: 100, w: 440, h: 860 })
     this.dateWidget = new DateWidget('dd.MM.uuuu', { x: 0, y: 0, w: 540, h: 80 })
     this.dateWidget2 = new DateWidget('EEEE | MMMM', { x: 0, y: 80, w: 540, h: 80 })
     this.stopwatchWidget = new StopwatchWidget({ x: 90, y: 700 })
     this.diskSpaceCWidget = new DiskSpaceWidget('C', { x: 20, y: 800 })
     this.diskSpaceDWidget = new DiskSpaceWidget('D', { x: 20, y: 850 })
     this.diskSpaceEWidget = new DiskSpaceWidget('E', { x: 20, y: 900 })
+    this.calendarWidget = new CalendarWidget(new Date(), { x: 20, y: 20, w: 500, h: 400 })
     this.currentPage = 0
   }
 
@@ -33,6 +36,10 @@ class DashboardApp {
           ...this.dateWidget.getWidgets(),
           ...this.dateWidget2.getWidgets(),
         ],
+      }
+    } else if (this.currentPage === -1) {
+      return {
+        widgets: [...this.calendarWidget.getWidgets()],
       }
     } else {
       return composePayloadInfo([
@@ -47,12 +54,13 @@ class DashboardApp {
   reactToTouch(pressedAreaId?: any) {
     this.mdTasks.reactToTouch(pressedAreaId)
     this.stopwatchWidget.reactToTouch(pressedAreaId)
+    this.calendarWidget.reactToTouch(pressedAreaId)
   }
 
   reactToButton(buttonId: EventButton) {
     if (buttonId === EventButton.Down && this.currentPage < 1) {
       this.currentPage += 1
-    } else if (buttonId === EventButton.Up && this.currentPage > 0) {
+    } else if (buttonId === EventButton.Up && this.currentPage > -1) {
       this.currentPage -= 1
     }
   }
