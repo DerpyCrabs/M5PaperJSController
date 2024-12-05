@@ -10,17 +10,18 @@ const uncheckedIconPath = path.join(__dirname, '..', 'Assets', 'unchecked.bmp')
 export class MdTasksWidget {
   constructor(public filePath: string, public position: { x: number; y: number; w: number; h: number }) {}
 
-  parseFile(): (string | { name: string; completed: boolean })[] {
+  parseFile(): (string | { name: string; completed: boolean; level: number })[] {
     try {
       const text = fs.readFileSync(this.filePath, { encoding: 'utf-8' })
       const lines = text.split('\n')
       return lines.map((line) => {
-        const taskRegex = /^\w*- \[([ x])\] (.+)\w*/s
+        const taskRegex = /^(\t*)- \[([ x])\] (.+)\w*/s
         if (taskRegex.test(line)) {
           const match = taskRegex.exec(line)!
-          const completed = match[1] === 'x'
-          const taskName = match[2]
-          return { name: taskName, completed }
+          const level = match[1].length
+          const completed = match[2] === 'x'
+          const taskName = match[3]
+          return { name: taskName, completed, level }
         } else {
           return line
         }
@@ -31,10 +32,10 @@ export class MdTasksWidget {
     }
   }
 
-  writeTasksToFile(tasks: (string | { name: string; completed: boolean })[]) {
+  writeTasksToFile(tasks: (string | { name: string; completed: boolean; level: number })[]) {
     try {
       const lines = tasks
-        .map((t) => (typeof t === 'string' ? t : `- [${t.completed ? 'x' : ' '}] ${t.name}`))
+        .map((t) => (typeof t === 'string' ? t : `${'\t'.repeat(t.level)}- [${t.completed ? 'x' : ' '}] ${t.name}`))
         .join('\n')
       fs.writeFileSync(this.filePath, lines)
     } catch (e: any) {
@@ -50,9 +51,10 @@ export class MdTasksWidget {
       const uncheckedIcon = await readImage(uncheckedIconPath)
       return tasks.flatMap((task, index) => {
         if (typeof task !== 'string') {
+          const offsetX = task.level * 20
           return [
             ...buttonWidget({
-              x: this.position.x,
+              x: this.position.x + offsetX,
               y: this.position.y + 15 + index * 60,
               w: 540,
               h: 60,
@@ -67,15 +69,15 @@ export class MdTasksWidget {
             {
               widgetType: WidgetType.Image,
               pixelData: task.completed ? checkedIcon : uncheckedIcon,
-              x: this.position.x + 14,
+              x: this.position.x + 14 + offsetX,
               y: this.position.y + 28 + index * 60,
             },
             ...(task.completed
               ? [
                   {
                     widgetType: WidgetType.Line,
-                    x1: this.position.x + 55,
-                    x2: this.position.x + 55 + task.name.length * 18 + 8,
+                    x1: this.position.x + 55 + offsetX,
+                    x2: this.position.x + 55 + offsetX + task.name.length * 18 + 8,
                     y1: this.position.y + 45 + index * 60,
                     y2: this.position.y + 45 + index * 60,
                     color: 15,
