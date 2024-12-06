@@ -1,4 +1,4 @@
-import { WidgetType, getPayload, type Widget, type PayloadInfo, composePayloadInfo } from './widgets'
+import { WidgetType, getPayload, type Widget, type PayloadInfo, composePayloadInfo, UpdateMode } from './widgets'
 import { DateWidget } from './widgets/date'
 import { MdTasksWidget } from './widgets/mdTasks'
 import { StopwatchWidget } from './widgets/stopwatch'
@@ -51,14 +51,22 @@ class DashboardApp {
     }
   }
 
-  reactToTouch(pressedAreaId?: any) {
+  async reactToTouch(pressedAreaId?: any): Promise<PayloadInfo | void> {
     this.mdTasks.reactToTouch(pressedAreaId)
     this.stopwatchWidget.reactToTouch(pressedAreaId)
     this.calendarWidget.reactToTouch(pressedAreaId)
   }
 
-  reactToButton(buttonId: EventButton) {
-    if (buttonId === EventButton.Down && this.currentPage < 1) {
+  async reactToButton(buttonId: EventButton): Promise<PayloadInfo | void> {
+    if (buttonId === EventButton.Push) {
+      return composePayloadInfo([
+        {
+          updateMode: UpdateMode.UpdateModeGC16,
+          widgets: [],
+        },
+        await this.getPayloadInfo(),
+      ])
+    } else if (buttonId === EventButton.Down && this.currentPage < 1) {
       this.currentPage += 1
     } else if (buttonId === EventButton.Up && this.currentPage > -1) {
       this.currentPage -= 1
@@ -93,30 +101,39 @@ Bun.serve({
       const view = new DataView(body)
       const eventType = view.getUint8(0)
       let reactionCount = 0
+      let payloadInfo: PayloadInfo | void
 
       if (eventType === EventType.Button) {
         const buttonId = view.getUint8(1)
-        app.reactToButton(buttonId as EventButton)
+        payloadInfo = await app.reactToButton(buttonId as EventButton)
         reactionCount += 1
       } else {
         const x = view.getUint16(1)
         const y = view.getUint16(3)
-        sentWidgets.forEach((w) => {
-          if (
-            eventType === EventType.Touch &&
-            w.widgetType === WidgetType.TouchArea &&
-            x >= w.x &&
-            x <= w.x + w.w &&
-            y >= w.y &&
-            y <= w.y + w.h
-          ) {
-            app.reactToTouch(w.id)
-            reactionCount += 1
-          }
-        })
+        payloadInfo = await Promise.all(
+          sentWidgets.map(async (w) => {
+            if (
+              eventType === EventType.Touch &&
+              w.widgetType === WidgetType.TouchArea &&
+              x >= w.x &&
+              x <= w.x + w.w &&
+              y >= w.y &&
+              y <= w.y + w.h
+            ) {
+              const result = await app.reactToTouch(w.id)
+              if (result) {
+                reactionCount += 1
+                return result
+              }
+            }
+          })
+        ).then((results) => results.find((result) => result !== null))
       }
 
-      const payloadInfo = await app.getPayloadInfo()
+      if (!payloadInfo) {
+        payloadInfo = await app.getPayloadInfo()
+      }
+
       sentWidgets = payloadInfo.widgets
       const payload = getPayload(payloadInfo)
       console.log(`POST request: sent ${sentWidgets.length} widgets, detected press on ${reactionCount}`)
